@@ -574,8 +574,8 @@ main {
   overflow-y: auto;
   display: flex; flex-direction: column; gap: 14px;
   align-items: flex-start;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #1c1c1c;
+  border: 1px solid #333333;
   border-radius: var(--radius-lg);
   padding: 18px;
   margin-right: 4px;
@@ -587,14 +587,14 @@ main {
 .lb-palette .swatch {
   width: 30px; height: 30px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.25);
+  border: 1px solid #4d4d4d;
   cursor: pointer;
   position: relative;
 }
 .lb-palette .swatch:hover::after {
   content: attr(data-hex);
   position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.9); color: #fff; font-size: 10px;
+  background: #000000; color: #fff; font-size: 10px;
   padding: 2px 6px; border-radius: 4px; white-space: nowrap;
 }
 
@@ -603,8 +603,8 @@ main {
   width: 100%;
 }
 .lb-tag {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.16);
+  background: #2a2a2a;
+  border: 1px solid #3d3d3d;
   color: #fff;
   border-radius: 999px;
   padding: 3px 6px 3px 10px;
@@ -612,33 +612,33 @@ main {
   font-size: 12px;
 }
 .lb-tag button {
-  background: none; border: none; color: rgba(255,255,255,0.7);
+  background: none; border: none; color: #cfcfcf;
   font-size: 13px; line-height: 1; padding: 0 2px;
 }
 .lb-tag button:hover { color: #fff; }
 .lb-tag-input {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.16);
+  background: #232323;
+  border: 1px solid #3d3d3d;
   color: #fff;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
   min-width: 120px;
 }
-.lb-tag-input::placeholder { color: rgba(255,255,255,0.4); }
-.lb-tag-input:focus { outline: none; border-color: rgba(255,255,255,0.4); }
+.lb-tag-input::placeholder { color: #808080; }
+.lb-tag-input:focus { outline: none; border-color: #6b6b6b; }
 
 .lb-notes {
   width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.16);
+  background: #232323;
+  border: 1px solid #3d3d3d;
   color: #fff;
   border-radius: var(--radius);
   padding: 8px 10px;
   resize: vertical;
 }
-.lb-notes::placeholder { color: rgba(255,255,255,0.4); }
-.lb-notes:focus { outline: none; border-color: rgba(255,255,255,0.4); }
+.lb-notes::placeholder { color: #808080; }
+.lb-notes:focus { outline: none; border-color: #6b6b6b; }
 
 .lightbox-bar {
   width: 100%;
