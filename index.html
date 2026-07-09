@@ -142,6 +142,11 @@ header {
   background: rgba(59,130,246,0.14);
   color: var(--flag-blue);
 }
+#starredBtn.active {
+  border-color: #ffd23f;
+  background: rgba(255,210,63,0.14);
+  color: #ffd23f;
+}
 .tb-shortcut {
   font-size: 10px; color: var(--text-dim);
   border: 1px solid var(--border);
@@ -183,13 +188,33 @@ header {
   border-radius: var(--radius);
   background: none; border: none;
   color: var(--text); font-size: 13px;
+  text-decoration: none;
   cursor: pointer; text-align: left;
+  box-sizing: border-box;
 }
 .menu-item:hover { background: var(--surface2); }
 .menu-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-muted); }
 .menu-item.danger:hover { color: var(--danger); }
 .menu-item.danger:hover svg { color: var(--danger); }
 .mi-shortcut { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+
+.tb-menu-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.tb-menu-footer-left { display: flex; align-items: center; gap: 14px; }
+.tb-footer-link {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 4px; margin: -2px -4px;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-radius: var(--radius);
+  transition: color .15s, background .15s;
+}
+.tb-footer-link:hover { color: var(--text); background: var(--surface2); }
 .menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
 
 .project-row {
@@ -222,7 +247,6 @@ main {
 
 .category {
   border: 1px solid var(--border);
-  border-top: 3px solid var(--cat-color, var(--border));
   border-radius: var(--radius-lg);
   margin-bottom: 14px;
   background: var(--surface);
@@ -286,7 +310,6 @@ main {
 .collapsed-card {
   width: 160px;
   border: 1px solid var(--border);
-  border-top: 3px solid var(--cat-color, var(--border));
   border-radius: var(--radius-lg);
   background: var(--surface);
   overflow: hidden;
@@ -529,27 +552,32 @@ main {
 }
 .lightbox.open { display: flex; }
 .lb-media {
-  flex: 1 1 auto;
+  /* Content-sized, not flex-growing — so the image+panel group is centered
+     as a whole by the parent's justify-content, with equal margins on
+     both sides, instead of the image stretching and pushing the panel
+     against the window edge. */
+  flex: 0 1 auto;
   min-width: 0;
-  max-height: 90vh;
+  max-height: 85vh;
   display: flex; align-items: center; justify-content: center;
 }
 .lightbox img {
-  max-width: 100%; max-height: 90vh;
+  max-width: min(calc(100vw - 260px - 28px - 120px), 820px);
+  max-height: 85vh;
   object-fit: contain;
   border-radius: var(--radius);
 }
 .lb-side {
-  flex: 0 0 320px;
-  width: 320px;
-  max-height: 90vh;
+  flex: 0 0 260px;
+  width: 260px;
+  max-height: 85vh;
   overflow-y: auto;
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 14px;
   align-items: flex-start;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius-lg);
-  padding: 22px;
+  padding: 18px;
   margin-right: 4px;
   box-sizing: border-box;
 }
@@ -643,7 +671,7 @@ main {
 @media (max-width: 780px) {
   .lightbox { flex-direction: column; padding: 30px 20px 40px; }
   .lb-media { max-height: 55vh; }
-  .lightbox img { max-height: 55vh; }
+  .lightbox img { max-width: 100%; max-height: 55vh; }
   .lb-side { width: 100%; max-width: 480px; flex: 0 0 auto; max-height: none; }
 }
 
@@ -695,6 +723,63 @@ main {
 }
 .hint-toast.show { opacity: 1; }
 
+/* ---------- Help modal ---------- */
+#help-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+#help-overlay.show { display: flex; }
+#help-modal {
+  position: relative;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  color: var(--text);
+}
+#help-modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+#help-modal ol {
+  display: flex; flex-direction: column; gap: 12px;
+  padding-left: 20px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--text-muted);
+}
+#help-modal ol strong { color: var(--text); }
+#help-modal kbd {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: var(--text);
+}
+#help-close {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+#help-close:hover { color: var(--text); }
+
+/* ---------- Page footer ---------- */
+#page-footer {
+  padding: 16px 20px 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+#page-footer a { color: var(--text-muted); text-decoration: none; }
+#page-footer a:hover { color: var(--text); text-decoration: underline; }
+
 @media (max-width: 640px) {
   header { flex-wrap: wrap; }
   .search-input { width: 100%; order: 10; }
@@ -730,6 +815,34 @@ main {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         Delete project
       </button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="helpBtn" title="Quick guide to using Moodboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Help
+      </button>
+      <div class="menu-sep"></div>
+      <a class="menu-item" href="https://storyboard.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Storyboard app">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l4-4 4 4m0 0l4-4 4 4M4 20h16M12 3v13"/></svg>
+        Storyboard App
+      </a>
+      <a class="menu-item" href="https://blocking.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Blocking app">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        Blocking App
+      </a>
+      <a class="menu-item" href="https://time.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Time Tracker app">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Time Tracker App
+      </a>
+      <div class="menu-sep"></div>
+      <div class="tb-menu-footer">
+        <span class="tb-menu-footer-left">
+          <a class="tb-footer-link" href="https://github.com/arnofaure/moodboard" target="_blank" rel="noopener noreferrer" title="View source on GitHub">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+        </span>
+        <span class="tb-version">v1.0</span>
+      </div>
     </div>
     <input type="file" id="jsonFileInput" accept="application/json" style="display:none;">
   </div>
@@ -756,9 +869,9 @@ main {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.2 1.3 6L12 16.8 6.6 19.4l1.3-6L3.3 9.2l6.1-.6L12 3Z"></path></svg>
     Starred
   </button>
-  <button class="tb-btn" id="exportBtn" title="Export current view as image">
+  <button class="tb-btn" id="exportBtn" title="Export the whole moodboard as a PNG image">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
-    Export image
+    Export Moodboard
   </button>
   <button class="btn icon" id="themeBtn" title="Toggle theme">◐</button>
 </header>
@@ -799,6 +912,29 @@ main {
 <div class="hint-toast" id="hintToast"></div>
 
 <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+
+<div id="help-overlay">
+  <div id="help-modal">
+    <button id="help-close" title="Close">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <h2>How to use Moodboard</h2>
+    <ol>
+      <li><strong>Everything stays on your device.</strong> Moodboard runs entirely in your browser — your images and projects are never uploaded, no account needed.</li>
+      <li><strong>Add images</strong> by dragging files in, pasting (Cmd/Ctrl+V) a copied image or an image URL, or the <strong>+</strong> tile in any category.</li>
+      <li><strong>Organize with categories.</strong> Collapse one into a small card, drag the ⠿ handle to reorder, or expand any one full-page with the ⤢ icon.</li>
+      <li><strong>Tag, star, search.</strong> Add tags and notes from the image view, star favorites (<kbd>S</kbd>), and filter by tag, category, or starred only.</li>
+      <li><strong>Colors.</strong> Extract a palette from any local image, or add one by hand with a hex/RGB value — both get a meaningful name automatically.</li>
+      <li><strong>Wall view</strong> (<kbd>W</kbd>) shows every image at its real aspect ratio, mixed across categories or focused on just one.</li>
+      <li><strong>Nothing is saved to a file automatically.</strong> Use <strong>Save</strong> (<kbd>Cmd/Ctrl+S</kbd>, in this menu) to download a project file (.json), and <strong>Open</strong> to restore it later.</li>
+    </ol>
+    <p style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;">Bug, idea, or feature request? I'd love to hear from you —<br><a href="mailto:info@arnofaure.com" style="color:rgba(255,255,255,0.55);">info@arnofaure.com</a></p>
+  </div>
+</div>
+
+<footer id="page-footer">
+  &copy; 2026 Created for the love of stories by <a href="https://arnofaure.com" target="_blank" rel="noopener noreferrer">Arno Faure</a> &middot; Licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC 4.0</a>
+</footer>
 
 <script>
 (function(){
@@ -981,15 +1117,6 @@ function matchesQuery(item, cat, query) {
   return (item.tags || []).some(t => t.toLowerCase().includes(query));
 }
 
-// Purely decorative accent — cycles the same palette as the Storyboard
-// app's flags so each category box reads distinctly, without turning this
-// into a full tagging system.
-const CATEGORY_COLORS = ['var(--flag-blue)', 'var(--flag-green)', 'var(--flag-orange)', 'var(--flag-red)'];
-function categoryColor(cat, p) {
-  const idx = p.categories.findIndex(c => c.id === cat.id);
-  return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
-}
-
 function passesFilters(item, cat, query, starred) {
   if (starred && !item.starred) return false;
   return matchesQuery(item, cat, query);
@@ -1043,7 +1170,7 @@ function render() {
   if (collapsedCats.length) {
     const row = document.createElement('div');
     row.className = 'collapsed-row';
-    collapsedCats.forEach(cat => row.appendChild(makeCollapsedCard(cat, p)));
+    collapsedCats.forEach(cat => row.appendChild(makeCollapsedCard(cat)));
     mainEl.appendChild(row);
     anyRendered = true;
   }
@@ -1088,10 +1215,9 @@ function renderWall(p, query) {
   return grid;
 }
 
-function makeCollapsedCard(cat, p) {
+function makeCollapsedCard(cat) {
   const card = document.createElement('div');
   card.className = 'collapsed-card';
-  card.style.setProperty('--cat-color', categoryColor(cat, p));
   const srcs = [];
   for (const item of cat.items) {
     srcs.push(item.src);
@@ -1135,7 +1261,6 @@ function renderCategory(cat, p, query, expanded, natural) {
   const catEl = document.createElement('div');
   catEl.className = 'category' + (expanded ? ' category-expanded' : '');
   catEl.dataset.catId = cat.id;
-  catEl.style.setProperty('--cat-color', categoryColor(cat, p));
 
   const head = document.createElement('div');
   head.className = 'category-head';
@@ -1616,6 +1741,22 @@ document.getElementById('starredBtn').addEventListener('click', () => {
 /* ---------------- Export current view ---------------- */
 document.getElementById('exportBtn').addEventListener('click', async () => {
   toast('Rendering export…');
+  // Always export the whole moodboard (every category, uncollapsed) rather
+  // than whatever partial/filtered view happens to be on screen.
+  const prevExpanded = expandedCategoryId;
+  const prevWall = wallMode;
+  const prevStarred = starredOnly;
+  const prevQuery = searchInput.value;
+  const prevCollapsed = currentProject().categories.map(c => c.collapsed);
+  const needsFullRender = !!(prevExpanded || prevWall || prevStarred || prevQuery || prevCollapsed.some(Boolean));
+  if (needsFullRender) {
+    expandedCategoryId = null;
+    wallMode = false;
+    starredOnly = false;
+    searchInput.value = '';
+    currentProject().categories.forEach(c => { c.collapsed = false; });
+    render();
+  }
   try {
     const canvas = await html2canvas(mainEl, {
       backgroundColor: getComputedStyle(document.body).backgroundColor,
@@ -1631,6 +1772,15 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   } catch (err) {
     console.error(err);
     toast('Export failed — some remote images may block cross-origin capture');
+  } finally {
+    if (needsFullRender) {
+      expandedCategoryId = prevExpanded;
+      wallMode = prevWall;
+      starredOnly = prevStarred;
+      searchInput.value = prevQuery;
+      currentProject().categories.forEach((c, i) => { c.collapsed = prevCollapsed[i]; });
+      render();
+    }
   }
 });
 
@@ -1823,6 +1973,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeLightbox();
   if (e.key === 'ArrowLeft') lbStep(-1);
   if (e.key === 'ArrowRight') lbStep(1);
+  if (e.key.toLowerCase() === 's' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); lbStar.click(); }
 });
 
 /* ---------------- Color palette extraction ---------------- */
@@ -2088,6 +2239,17 @@ document.getElementById('themeBtn').addEventListener('click', () => {
   applyTheme(i);
 });
 applyTheme(parseInt(localStorage.getItem('moodboard.theme') || '0', 10));
+
+/* ---------------- Help modal ---------------- */
+const helpOverlay = document.getElementById('help-overlay');
+function openHelp() { helpOverlay.classList.add('show'); }
+function closeHelp() { helpOverlay.classList.remove('show'); }
+document.getElementById('helpBtn').addEventListener('click', openHelp);
+document.getElementById('help-close').addEventListener('click', closeHelp);
+helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && helpOverlay.classList.contains('show')) closeHelp();
+});
 
 /* ---------------- Boot ---------------- */
 loadAll().then(render);
