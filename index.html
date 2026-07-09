@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moodboard &mdash; 100% Free Moodboard Web App</title>
+<meta name="description" content="A 100% free moodboard web app, created for the love of stories by Arno Faure.">
+<meta name="theme-color" content="#0d0d0d">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1f1f1f;
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.18);
+  --border-sel: rgba(255,255,255,0.55);
+  --text: #e8e8e8;
+  --text-muted: #666;
+  --text-dim: #444;
+  --accent: #e8e8e8;
+  --danger: #e05555;
+  --radius: 6px;
+  --radius-lg: 10px;
+  /* Same palette as the Storyboard app's flag colors — used here as a
+     restrained, harmonious accent thread (active states, category accents)
+     rather than a full tagging system. */
+  --flag-blue: #3b82f6;
+  --flag-green: #22c55e;
+  --flag-orange: #f59e0b;
+  --flag-red: #ef4444;
+}
+body.theme-light {
+  --bg: #ffffff;
+  --surface: #f6f6f6;
+  --surface2: #ececec;
+  --border: rgba(0,0,0,0.08);
+  --border-hover: rgba(0,0,0,0.18);
+  --border-sel: rgba(0,0,0,0.45);
+  --text: #1a1a1a;
+  --text-muted: #8a8a8a;
+  --text-dim: #bbbbbb;
+}
+body.theme-gray {
+  --bg: #9b9b9b;
+  --surface: #a8a8a8;
+  --surface2: #b5b5b5;
+  --border: rgba(0,0,0,0.1);
+  --border-hover: rgba(0,0,0,0.22);
+  --border-sel: rgba(0,0,0,0.5);
+  --text: #1a1a1a;
+  --text-muted: #555555;
+  --text-dim: #787878;
+}
+body.theme-graphite {
+  --bg: #2b2b2b;
+  --surface: #333333;
+  --surface2: #3d3d3d;
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.18);
+  --border-sel: rgba(255,255,255,0.5);
+  --text: #e8e8e8;
+  --text-muted: #999999;
+  --text-dim: #666666;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; color: inherit; }
+
+/* ---------- Header ---------- */
+header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--border);
+  flex-wrap: wrap;
+}
+.logo {
+  font-weight: 600; font-size: 14px; letter-spacing: 0.2px;
+  margin-right: 6px; white-space: nowrap;
+}
+.logo span { color: var(--text-muted); font-weight: 400; }
+
+/* ---------- Main menu (logo button + dropdown) ---------- */
+.tb-menu-wrap { position: relative; }
+.tb-logo-btn {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color .12s, background .12s;
+}
+.tb-logo-btn:hover { border-color: var(--border-hover); background: var(--surface2); }
+
+.btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  white-space: nowrap;
+  transition: border-color .12s, background .12s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { border-color: var(--border-hover); background: var(--surface2); }
+.btn.icon { padding: 6px 9px; }
+.btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+.btn.active { border-color: var(--flag-blue); background: rgba(59,130,246,0.12); }
+.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.chevron-sm { width: 10px; height: 10px; margin-left: 2px; }
+
+/* Bigger, explicit icon+label toolbar buttons (Wall, Starred, Export) */
+.tb-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.tb-btn:hover { border-color: var(--border-hover); background: var(--surface2); }
+.tb-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.tb-btn.active {
+  border-color: var(--flag-blue);
+  background: rgba(59,130,246,0.14);
+  color: var(--flag-blue);
+}
+.tb-shortcut {
+  font-size: 10px; color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 2px;
+}
+
+.spacer { flex: 1; }
+
+.search-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  width: 200px;
+}
+.search-input:focus { outline: none; border-color: var(--flag-blue); }
+.search-input::placeholder { color: var(--text-muted); }
+
+/* ---------- Dropdown panels (main menu + project switcher) ---------- */
+.project-switcher { position: relative; }
+.dropdown-panel {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-width: 230px; max-width: 300px;
+  padding: 6px;
+  display: none;
+  z-index: 30;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  max-height: 60vh; overflow-y: auto;
+}
+.dropdown-panel.open { display: block; }
+
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 8px 10px;
+  border-radius: var(--radius);
+  background: none; border: none;
+  color: var(--text); font-size: 13px;
+  cursor: pointer; text-align: left;
+}
+.menu-item:hover { background: var(--surface2); }
+.menu-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-muted); }
+.menu-item.danger:hover { color: var(--danger); }
+.menu-item.danger:hover svg { color: var(--danger); }
+.mi-shortcut { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+.menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
+
+.project-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: var(--radius);
+  cursor: pointer;
+}
+.project-row:hover { background: var(--surface2); }
+.project-row.active { background: var(--surface2); border: 1px solid var(--border-hover); }
+.project-thumb {
+  width: 32px; height: 32px; border-radius: 6px; overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  background: var(--surface2); flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.project-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.project-thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 14px; }
+.project-row-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Main ---------- */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 16px 90px;
+}
+
+.expanded-bar {
+  margin-bottom: 12px;
+}
+
+.category {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--cat-color, var(--border));
+  border-radius: var(--radius-lg);
+  margin-bottom: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color .12s;
+}
+.category.dragover { border-color: var(--flag-blue); }
+.category.category-expanded { margin-bottom: 0; }
+
+.category-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.category-head:hover { background: var(--surface2); }
+.category-expanded .category-head { cursor: default; }
+.category-expanded .category-head:hover { background: none; }
+.cat-handle {
+  cursor: grab;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.cat-handle:hover { color: var(--text); }
+.category.dragging { opacity: 0.4; }
+.chevron {
+  width: 14px; height: 14px; flex-shrink: 0;
+  color: var(--text-muted);
+}
+.category-name {
+  font-weight: 600; font-size: 13px;
+  outline: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: -4px;
+}
+.category-expanded .category-name { font-size: 16px; }
+.category-name:focus { background: var(--surface2); }
+.category-count {
+  color: var(--text-muted); font-size: 12px;
+}
+.category-actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+.category-actions .btn { padding: 4px 9px; font-size: 12px; }
+
+.category-body {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Collapsed categories: small square cards with a mini image collage,
+   same idea as the project switcher's thumbnails. */
+.collapsed-row {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 14px;
+}
+.collapsed-card {
+  width: 160px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--cat-color, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .12s;
+}
+.collapsed-card:hover { border-color: var(--border-hover); }
+.collapsed-card-thumb {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  background: var(--surface2);
+}
+.collapsed-card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.collapsed-card-thumb.empty {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim); font-size: 22px;
+}
+.collapsed-card-label {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.collapsed-card-name {
+  font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.collapsed-card-count { color: var(--text-muted); flex-shrink: 0; margin-left: 6px; }
+
+/* Standard grid: uniform square tiles (category board + expanded category view) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.grid.grid-expanded {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+/* Masonry grid: only used in the "wall" view (all images together) — keeps each image's original ratio */
+.grid.grid-wall {
+  display: block;
+  column-width: 230px;
+  column-gap: 16px;
+}
+.empty-hint {
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 18px 4px;
+  text-align: center;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+}
+.grid .empty-hint { grid-column: 1 / -1; }
+.grid-wall .empty-hint { column-span: all; }
+
+.tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: grab;
+}
+.tile:hover { border-color: var(--border-hover); }
+.tile.selected { outline: 2px solid var(--flag-blue); outline-offset: -2px; }
+.tile.dragging { opacity: 0.35; }
+.tile img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+/* Natural-ratio tiles: only in the wall view */
+.tile.tile-natural {
+  aspect-ratio: auto;
+  display: block;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin: 0 0 16px;
+}
+.tile.tile-natural img {
+  height: auto;
+  object-fit: initial;
+}
+.tile-palette {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 5px;
+  display: flex;
+  z-index: 2;
+}
+.tile-palette span { flex: 1; }
+
+.tile .tile-del {
+  position: absolute; top: 8px; right: 4px;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border-radius: 50%;
+  border: none;
+  opacity: 0;
+  transition: opacity .12s, background .12s;
+  font-size: 13px; line-height: 1;
+}
+.tile:hover .tile-del { opacity: 1; }
+.tile .tile-del:hover { background: var(--danger); }
+
+.tile .tile-select {
+  position: absolute; top: 8px; left: 4px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.75);
+  background: rgba(0,0,0,0.35);
+  opacity: 0;
+  transition: opacity .12s, background .12s, border-color .12s;
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  color: #000;
+}
+.tile:hover .tile-select, .tile.selected .tile-select { opacity: 1; }
+.tile.selected .tile-select { background: #fff; border-color: #fff; }
+.tile.selected .tile-select::after { content: '✓'; }
+
+.tile .tile-star {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.35);
+  border-radius: 50%;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .12s, background .12s, color .12s;
+}
+.tile:hover .tile-star, .tile.starred .tile-star { opacity: 1; }
+.tile.starred .tile-star { color: #ffd23f; background: rgba(0,0,0,0.5); }
+
+.tile-tags {
+  position: absolute; left: 4px; bottom: 4px; right: 4px;
+  display: flex; flex-wrap: wrap; gap: 3px;
+  pointer-events: none;
+}
+.tile-tag {
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 1px 6px;
+  border-radius: 999px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tile-tag.tile-cat { background: rgba(255,255,255,0.85); color: #111; font-weight: 600; }
+
+/* add-image tile */
+.tile.add-tile {
+  aspect-ratio: 1 / 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  border: 1.5px dashed var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  background: transparent;
+}
+.tile.add-tile:hover { border-color: var(--border-hover); color: var(--text); }
+.tile.add-tile svg { width: 20px; height: 20px; }
+.tile.add-tile span { font-size: 11px; }
+
+/* url add row */
+.url-row {
+  display: none;
+  gap: 6px;
+  margin-top: 10px;
+}
+.url-row.open { display: flex; }
+.url-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+}
+.url-row input:focus { outline: none; border-color: var(--border-hover); }
+
+/* add-category */
+.add-category-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  background: transparent;
+}
+.add-category-btn:hover { border-color: var(--border-hover); color: var(--text); background: var(--surface); }
+
+/* ---------- Lightbox ---------- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center; justify-content: center;
+  flex-direction: row;
+  gap: 28px;
+  padding: 50px 60px;
+  overflow-y: auto;
+}
+.lightbox.open { display: flex; }
+.lb-media {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 90vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox img {
+  max-width: 100%; max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+.lb-side {
+  flex: 0 0 320px;
+  width: 320px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+  align-items: flex-start;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-right: 4px;
+  box-sizing: border-box;
+}
+.lb-palette {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.lb-palette .swatch {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  position: relative;
+}
+.lb-palette .swatch:hover::after {
+  content: attr(data-hex);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.9); color: #fff; font-size: 10px;
+  padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+}
+
+.lb-tags {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  width: 100%;
+}
+.lb-tag {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 6px 3px 10px;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px;
+}
+.lb-tag button {
+  background: none; border: none; color: rgba(255,255,255,0.7);
+  font-size: 13px; line-height: 1; padding: 0 2px;
+}
+.lb-tag button:hover { color: #fff; }
+.lb-tag-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  min-width: 120px;
+}
+.lb-tag-input::placeholder { color: rgba(255,255,255,0.4); }
+.lb-tag-input:focus { outline: none; border-color: rgba(255,255,255,0.4); }
+
+.lb-notes {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  resize: vertical;
+}
+.lb-notes::placeholder { color: rgba(255,255,255,0.4); }
+.lb-notes:focus { outline: none; border-color: rgba(255,255,255,0.4); }
+
+.lightbox-bar {
+  width: 100%;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.lightbox-bar .btn { width: 100%; justify-content: center; }
+.lightbox-close {
+  position: absolute; top: 16px; right: 20px;
+  background: none; border: none; color: #fff; font-size: 26px;
+  z-index: 102;
+}
+.lightbox-nav {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.08);
+  border: none; color: #fff; width: 40px; height: 40px;
+  border-radius: 50%; font-size: 18px;
+  z-index: 102;
+}
+.lightbox-nav:hover { background: rgba(255,255,255,0.18); }
+.lightbox-nav.prev { left: 16px; }
+.lightbox-nav.next { right: 16px; }
+.lightbox select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+}
+
+@media (max-width: 780px) {
+  .lightbox { flex-direction: column; padding: 30px 20px 40px; }
+  .lb-media { max-height: 55vh; }
+  .lightbox img { max-height: 55vh; }
+  .lb-side { width: 100%; max-width: 480px; flex: 0 0 auto; max-height: none; }
+}
+
+/* ---------- Bulk selection bar ---------- */
+.bulk-bar {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  padding: 8px 10px;
+  display: none;
+  align-items: center; gap: 8px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 32px);
+  z-index: 60;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+}
+.bulk-bar.show { display: flex; }
+.bulk-bar span { font-size: 12px; color: var(--text-muted); white-space: nowrap; padding-left: 4px; }
+.bulk-bar select, .bulk-bar input {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 5px 8px; font-size: 12px;
+}
+.bulk-bar input { width: 140px; }
+
+/* ---------- Global drop overlay ---------- */
+.drop-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0,0,0,0.5);
+  border: 3px dashed rgba(255,255,255,0.4);
+  display: none;
+  align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  pointer-events: none;
+}
+.drop-overlay.show { display: flex; }
+
+.hint-toast {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+  z-index: 200;
+}
+.hint-toast.show { opacity: 1; }
+
+@media (max-width: 640px) {
+  header { flex-wrap: wrap; }
+  .search-input { width: 100%; order: 10; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .grid.grid-expanded { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .grid.grid-wall { column-width: 150px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tb-menu-wrap" id="mainMenuWrap">
+    <button class="tb-logo-btn" id="mainMenuBtn" title="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="2" fill="#3b82f6"/><rect x="13" y="2" width="9" height="9" rx="2" fill="#22c55e"/><rect x="2" y="13" width="9" height="9" rx="2" fill="#f59e0b"/><rect x="13" y="13" width="9" height="9" rx="2" fill="#ef4444"/></svg>
+    </button>
+    <div class="dropdown-panel" id="mainMenu">
+      <button class="menu-item" id="importJsonBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+        Open project&hellip;
+      </button>
+      <button class="menu-item" id="exportJsonBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M8 3v5h7V3"/><path d="M7 21v-7h10v7"/></svg>
+        Save project
+        <span class="mi-shortcut">&#8984;S</span>
+      </button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="newProjectBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New project
+      </button>
+      <button class="menu-item danger" id="deleteProjectBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Delete project
+      </button>
+    </div>
+    <input type="file" id="jsonFileInput" accept="application/json" style="display:none;">
+  </div>
+
+  <div class="logo">Moodboard <span>&mdash; free &amp; open</span></div>
+
+  <div class="project-switcher" id="projectSwitcher">
+    <button class="btn" id="projectSwitcherBtn">
+      <span id="pswLabel">Project</span>
+      <svg class="chevron-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+    <div class="dropdown-panel project-menu" id="projectMenu"></div>
+  </div>
+
+  <div class="spacer"></div>
+  <input type="text" id="searchInput" class="search-input" placeholder="Search by tag or category&hellip;">
+
+  <button class="tb-btn" id="wallBtn" title="Wall view — original image ratio (all categories, or just the expanded one)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+    Wall
+    <span class="tb-shortcut">W</span>
+  </button>
+  <button class="tb-btn" id="starredBtn" title="Show starred images only">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.2 1.3 6L12 16.8 6.6 19.4l1.3-6L3.3 9.2l6.1-.6L12 3Z"></path></svg>
+    Starred
+  </button>
+  <button class="tb-btn" id="exportBtn" title="Export current view as image">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+    Export image
+  </button>
+  <button class="btn icon" id="themeBtn" title="Toggle theme">◐</button>
+</header>
+
+<main id="main"></main>
+
+<button class="add-category-btn" id="addCategoryBtn" style="max-width:1400px;margin:0 auto 40px;display:none;">+ New category</button>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lbClose">&times;</button>
+  <button class="lightbox-nav prev" id="lbPrev">&#8249;</button>
+  <button class="lightbox-nav next" id="lbNext">&#8250;</button>
+  <div class="lb-media">
+    <img id="lbImg" src="" alt="">
+  </div>
+  <div class="lb-side">
+    <div class="lb-palette" id="lbPaletteRow"></div>
+    <div class="lb-tags" id="lbTags"></div>
+    <textarea id="lbNotes" class="lb-notes" rows="3" placeholder="Notes… (references, source, intent)"></textarea>
+    <div class="lightbox-bar">
+      <select id="lbMove"></select>
+      <button class="btn" id="lbStar">&#9734; Star</button>
+      <button class="btn" id="lbPalette">Extract colors</button>
+      <button class="btn danger" id="lbDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="bulk-bar" id="bulkBar">
+  <span id="bulkCount"></span>
+  <select id="bulkMove"><option value="">Move to&hellip;</option></select>
+  <input type="text" id="bulkTagInput" placeholder="Add tag to selection, Enter">
+  <button class="btn danger" id="bulkDelete">Delete</button>
+  <button class="btn" id="bulkClear">Clear</button>
+</div>
+
+<div class="drop-overlay" id="dropOverlay">Drop your images here</div>
+<div class="hint-toast" id="hintToast"></div>
+
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------- IndexedDB layer ---------------- */
+const DB_NAME = 'moodboard-db';
+const STORE = 'projects';
+let dbPromise = new Promise((resolve, reject) => {
+  const req = indexedDB.open(DB_NAME, 1);
+  req.onupgradeneeded = () => {
+    req.result.createObjectStore(STORE, { keyPath: 'id' });
+  };
+  req.onsuccess = () => resolve(req.result);
+  req.onerror = () => reject(req.error);
+});
+
+function idbTx(mode) {
+  return dbPromise.then(db => db.transaction(STORE, mode).objectStore(STORE));
+}
+function idbGetAll() {
+  return idbTx('readonly').then(store => new Promise((res, rej) => {
+    const req = store.getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  }));
+}
+function idbPut(project) {
+  return idbTx('readwrite').then(store => new Promise((res, rej) => {
+    const req = store.put(project);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  }));
+}
+function idbDelete(id) {
+  return idbTx('readwrite').then(store => new Promise((res, rej) => {
+    const req = store.delete(id);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  }));
+}
+
+/* ---------------- Utilities ---------------- */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function looksLikeUrl(str) {
+  return /^https?:\/\/\S+$/i.test(str.trim());
+}
+
+function toast(msg) {
+  const el = document.getElementById('hintToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------------- Default data ---------------- */
+const DEFAULT_CATEGORIES = ['Characters', 'Sets', 'Textures', 'Colors'];
+
+// A few stable placeholder images (picsum.photos, deterministic IDs) so the
+// first project isn't empty — swap or delete freely.
+const SEED_IMAGES = {
+  'Characters': [{ id: 1005, tags: ['portrait', 'moody'] }, { id: 1011, tags: ['candid'] }, { id: 1027, tags: ['silhouette'] }],
+  'Sets': [{ id: 1015, tags: ['interior'] }, { id: 1039, tags: ['forest', 'nature'] }, { id: 1043, tags: ['urban'] }],
+  'Textures': [{ id: 1069, tags: ['rough', 'stone'] }, { id: 1074, tags: ['wood'] }, { id: 1077, tags: ['metal'] }],
+  'Colors': [{ id: 1080, tags: ['warm'] }, { id: 1084, tags: ['cool'] }, { id: 1082, tags: ['neutral'] }]
+};
+
+function makeDefaultProject(name) {
+  return {
+    id: uid(),
+    name: name || 'New project',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    categories: DEFAULT_CATEGORIES.map(catName => ({
+      id: uid(),
+      name: catName,
+      collapsed: false,
+      items: (SEED_IMAGES[catName] || []).map(seed => ({
+        id: uid(),
+        src: `https://picsum.photos/id/${seed.id}/600/450`,
+        tags: seed.tags.slice(),
+        notes: '',
+        addedAt: Date.now()
+      }))
+    }))
+  };
+}
+
+/* ---------------- State ---------------- */
+let projects = [];
+let currentProjectId = null;
+let activeCategoryId = null; // last-focused category, used as paste target
+let expandedCategoryId = null; // when set, only this category is shown, full-page
+let wallMode = false; // all categories mixed into one grid
+let starredOnly = false; // filter: only show starred images
+let selectedIds = new Set();
+let lb = { categoryId: null, index: -1 };
+
+/* ---------------- Persistence ---------------- */
+async function loadAll() {
+  projects = await idbGetAll();
+  projects.sort((a, b) => a.createdAt - b.createdAt);
+  if (!projects.length) {
+    const p = makeDefaultProject('My first project');
+    projects.push(p);
+    await idbPut(p);
+  }
+  currentProjectId = localStorage.getItem('moodboard.currentProjectId') || projects[0].id;
+  if (!projects.find(p => p.id === currentProjectId)) currentProjectId = projects[0].id;
+}
+
+function currentProject() {
+  return projects.find(p => p.id === currentProjectId);
+}
+
+function saveCurrentProject() {
+  const p = currentProject();
+  if (!p) return;
+  p.updatedAt = Date.now();
+  idbPut(p);
+}
+
+function findItemLocation(itemId) {
+  const p = currentProject();
+  for (const cat of p.categories) {
+    const idx = cat.items.findIndex(i => i.id === itemId);
+    if (idx > -1) return { cat, item: cat.items[idx], idx };
+  }
+  return null;
+}
+
+function resetViewState() {
+  expandedCategoryId = null;
+  wallMode = false;
+  starredOnly = false;
+  selectedIds.clear();
+  searchInput.value = '';
+  document.getElementById('wallBtn').classList.remove('active');
+  document.getElementById('starredBtn').classList.remove('active');
+}
+
+/* ---------------- Rendering ---------------- */
+const mainEl = document.getElementById('main');
+const addCategoryBtn = document.getElementById('addCategoryBtn');
+const searchInput = document.getElementById('searchInput');
+
+function svgChevron() {
+  return `<svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+}
+function svgPlus() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+}
+function svgExpand() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`;
+}
+function svgBack() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`;
+}
+
+function matchesQuery(item, cat, query) {
+  if (!query) return true;
+  if (cat.name.toLowerCase().includes(query)) return true;
+  return (item.tags || []).some(t => t.toLowerCase().includes(query));
+}
+
+// Purely decorative accent — cycles the same palette as the Storyboard
+// app's flags so each category box reads distinctly, without turning this
+// into a full tagging system.
+const CATEGORY_COLORS = ['var(--flag-blue)', 'var(--flag-green)', 'var(--flag-orange)', 'var(--flag-red)'];
+function categoryColor(cat, p) {
+  const idx = p.categories.findIndex(c => c.id === cat.id);
+  return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+}
+
+function passesFilters(item, cat, query, starred) {
+  if (starred && !item.starred) return false;
+  return matchesQuery(item, cat, query);
+}
+
+function render() {
+  const p = currentProject();
+  if (!p) return;
+  renderProjectSwitcher();
+  mainEl.innerHTML = '';
+
+  const query = searchInput.value.trim().toLowerCase();
+
+  if (expandedCategoryId) {
+    const cat = p.categories.find(c => c.id === expandedCategoryId);
+    if (!cat) {
+      expandedCategoryId = null;
+    } else {
+      const backBar = document.createElement('div');
+      backBar.className = 'expanded-bar';
+      const backBtn = document.createElement('button');
+      backBtn.className = 'btn';
+      backBtn.innerHTML = `${svgBack()} All categories`;
+      backBtn.addEventListener('click', () => { expandedCategoryId = null; render(); });
+      backBar.appendChild(backBtn);
+      mainEl.appendChild(backBar);
+      // wallMode, when a single category is expanded, switches that category's
+      // grid to original-ratio tiles instead of jumping to the all-categories mix.
+      const catEl = renderCategory(cat, p, query, true, wallMode);
+      if (catEl) mainEl.appendChild(catEl);
+      addCategoryBtn.style.display = 'none';
+      renderBulkBar();
+      return;
+    }
+  }
+
+  if (wallMode) {
+    addCategoryBtn.style.display = 'none';
+    mainEl.appendChild(renderWall(p, query));
+    renderBulkBar();
+    return;
+  }
+
+  let anyRendered = false;
+  // Collapsed categories become small square cards (like the project
+  // switcher's thumbnails) instead of a bare header line.
+  const filtering = !!query || starredOnly;
+  const collapsedCats = filtering ? [] : p.categories.filter(c => c.collapsed);
+  const openCats = filtering ? p.categories : p.categories.filter(c => !c.collapsed);
+
+  if (collapsedCats.length) {
+    const row = document.createElement('div');
+    row.className = 'collapsed-row';
+    collapsedCats.forEach(cat => row.appendChild(makeCollapsedCard(cat, p)));
+    mainEl.appendChild(row);
+    anyRendered = true;
+  }
+
+  openCats.forEach(cat => {
+    const catEl = renderCategory(cat, p, query, false, false);
+    if (catEl) { mainEl.appendChild(catEl); anyRendered = true; }
+  });
+  if (filtering && !anyRendered) {
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.style.margin = '20px 0';
+    hint.style.columnSpan = 'none';
+    hint.textContent = query ? `No results for "${searchInput.value.trim()}"` : 'No starred images yet.';
+    mainEl.appendChild(hint);
+  }
+
+  addCategoryBtn.style.display = 'block';
+  renderBulkBar();
+}
+
+function renderWall(p, query) {
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-wall';
+  const all = [];
+  p.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      if (passesFilters(item, cat, query, starredOnly)) all.push({ cat, item });
+    });
+  });
+  if (!all.length) {
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.textContent = query ? `No results for "${searchInput.value.trim()}"` : (starredOnly ? 'No starred images yet.' : 'No images yet in this project.');
+    grid.appendChild(hint);
+  } else {
+    all.forEach(({ cat, item }) => {
+      const idx = cat.items.indexOf(item);
+      grid.appendChild(makeTile(cat, item, idx, cat.name, true));
+    });
+  }
+  return grid;
+}
+
+function makeCollapsedCard(cat, p) {
+  const card = document.createElement('div');
+  card.className = 'collapsed-card';
+  card.style.setProperty('--cat-color', categoryColor(cat, p));
+  const srcs = [];
+  for (const item of cat.items) {
+    srcs.push(item.src);
+    if (srcs.length >= 4) break;
+  }
+  const thumbHtml = srcs.length
+    ? `<div class="collapsed-card-thumb">${srcs.map(s => `<img src="${s}" loading="lazy">`).join('')}</div>`
+    : `<div class="collapsed-card-thumb empty">&middot;</div>`;
+  card.innerHTML = `
+    ${thumbHtml}
+    <div class="collapsed-card-label">
+      <span class="collapsed-card-name">${escapeHtml(cat.name)}</span>
+      <span class="collapsed-card-count">${cat.items.length}</span>
+    </div>
+  `;
+  card.addEventListener('click', () => {
+    cat.collapsed = false;
+    saveCurrentProject();
+    render();
+  });
+  return card;
+}
+
+function handleCategoryDrop(draggedId, targetId) {
+  if (draggedId === targetId) return;
+  const p = currentProject();
+  const fromIdx = p.categories.findIndex(c => c.id === draggedId);
+  if (fromIdx === -1) return;
+  const [movedCat] = p.categories.splice(fromIdx, 1);
+  const toIdx = p.categories.findIndex(c => c.id === targetId);
+  p.categories.splice(toIdx > -1 ? toIdx : p.categories.length, 0, movedCat);
+  saveCurrentProject();
+  render();
+}
+
+function renderCategory(cat, p, query, expanded, natural) {
+  const filtering = !!query || starredOnly;
+  const matched = filtering ? cat.items.filter(item => passesFilters(item, cat, query, starredOnly)) : cat.items;
+  if (!expanded && filtering && matched.length === 0) return null;
+
+  const catEl = document.createElement('div');
+  catEl.className = 'category' + (expanded ? ' category-expanded' : '');
+  catEl.dataset.catId = cat.id;
+  catEl.style.setProperty('--cat-color', categoryColor(cat, p));
+
+  const head = document.createElement('div');
+  head.className = 'category-head';
+  const countLabel = filtering ? `${matched.length}/${cat.items.length}` : `${cat.items.length}`;
+  head.innerHTML = `
+    ${expanded ? '' : `<button class="cat-handle" title="Drag to reorder" draggable="true">⠿</button>${svgChevron()}`}
+    <span class="category-name" contenteditable="${expanded ? 'false' : 'true'}" spellcheck="false">${escapeHtml(cat.name)}</span>
+    <span class="category-count">${countLabel}</span>
+    <div class="category-actions">
+      ${expanded ? '' : `<button class="btn expand-cat" title="View larger">${svgExpand()}</button>`}
+      <button class="btn url-toggle" title="Add by URL">+ URL</button>
+      <button class="btn del-cat danger" title="Delete category">Delete</button>
+    </div>
+  `;
+
+  if (!expanded) {
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('.category-name') || e.target.closest('.category-actions') || e.target.closest('.cat-handle')) return;
+      cat.collapsed = true;
+      saveCurrentProject();
+      render();
+    });
+
+    const nameEl = head.querySelector('.category-name');
+    nameEl.addEventListener('click', e => e.stopPropagation());
+    nameEl.addEventListener('blur', () => {
+      cat.name = nameEl.textContent.trim() || 'Untitled';
+      nameEl.textContent = cat.name;
+      saveCurrentProject();
+    });
+    nameEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+    });
+
+    head.querySelector('.expand-cat').addEventListener('click', (e) => {
+      e.stopPropagation();
+      expandedCategoryId = cat.id;
+      render();
+    });
+
+    const catHandle = head.querySelector('.cat-handle');
+    catHandle.addEventListener('click', e => e.stopPropagation());
+    catHandle.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('application/x-moodboard-category', cat.id);
+      e.dataTransfer.effectAllowed = 'move';
+      catEl.classList.add('dragging');
+    });
+    catHandle.addEventListener('dragend', () => catEl.classList.remove('dragging'));
+  }
+
+  head.querySelector('.url-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    urlRow.classList.toggle('open');
+    if (urlRow.classList.contains('open')) urlRow.querySelector('input').focus();
+  });
+  head.querySelector('.del-cat').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!confirm(`Delete category "${cat.name}" and its ${cat.items.length} image(s)?`)) return;
+    p.categories = p.categories.filter(c => c.id !== cat.id);
+    saveCurrentProject();
+    if (expandedCategoryId === cat.id) expandedCategoryId = null;
+    render();
+  });
+
+  const body = document.createElement('div');
+  body.className = 'category-body';
+
+  const grid = document.createElement('div');
+  grid.className = 'grid' + (natural ? ' grid-wall' : (expanded ? ' grid-expanded' : ''));
+
+  matched.forEach(item => {
+    const idx = cat.items.indexOf(item);
+    grid.appendChild(makeTile(cat, item, idx, null, natural));
+  });
+  if (!filtering) grid.appendChild(makeAddTile(cat));
+
+  if (expanded && !cat.items.length) {
+    const hint = document.createElement('div');
+    hint.className = 'empty-hint';
+    hint.textContent = 'No images yet — drop some in, paste a URL, or use the tile above.';
+    grid.appendChild(hint);
+  }
+
+  body.appendChild(grid);
+
+  const urlRow = document.createElement('div');
+  urlRow.className = 'url-row';
+  urlRow.innerHTML = `<input type="text" placeholder="Paste an image URL (https://...) and press Enter">`;
+  const urlInput = urlRow.querySelector('input');
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.stopPropagation();
+      const val = urlInput.value.trim();
+      if (val && looksLikeUrl(val)) {
+        addImageToCategory(cat, val);
+        urlInput.value = '';
+        urlRow.classList.remove('open');
+      } else {
+        toast('That doesn’t look like a valid URL');
+      }
+    } else if (e.key === 'Escape') {
+      urlRow.classList.remove('open');
+    }
+  });
+  body.appendChild(urlRow);
+
+  catEl.appendChild(head);
+  catEl.appendChild(body);
+
+  if (!filtering) {
+    const dndTypes = ['Files', 'text/plain', 'application/x-moodboard-item', 'application/x-moodboard-category'];
+    ['dragenter', 'dragover'].forEach(ev => catEl.addEventListener(ev, (e) => {
+      if (!dndTypes.some(t => e.dataTransfer.types.includes(t))) return;
+      e.preventDefault();
+      catEl.classList.add('dragover');
+    }));
+    ['dragleave'].forEach(ev => catEl.addEventListener(ev, (e) => {
+      if (e.target === catEl) catEl.classList.remove('dragover');
+    }));
+    catEl.addEventListener('drop', (e) => {
+      catEl.classList.remove('dragover');
+      const draggedCatId = e.dataTransfer.getData('application/x-moodboard-category');
+      if (draggedCatId) { e.preventDefault(); handleCategoryDrop(draggedCatId, cat.id); return; }
+      const internalId = e.dataTransfer.getData('application/x-moodboard-item');
+      if (internalId) { e.preventDefault(); handleInternalDrop(internalId, cat, null); return; }
+      if (e.dataTransfer.files && e.dataTransfer.files.length) {
+        e.preventDefault();
+        handleFileDrop(e.dataTransfer.files, cat);
+        return;
+      }
+      const text = e.dataTransfer.getData('text/plain');
+      if (text && looksLikeUrl(text)) { e.preventDefault(); addImageToCategory(cat, text.trim()); }
+    });
+  }
+
+  catEl.addEventListener('click', () => { activeCategoryId = cat.id; });
+
+  return catEl;
+}
+
+function tileTagsHtml(item, badgeText) {
+  const badge = badgeText ? `<span class="tile-tag tile-cat">${escapeHtml(badgeText)}</span>` : '';
+  const tags = (item.tags || []).slice(0, 3).map(t => `<span class="tile-tag">${escapeHtml(t)}</span>`).join('');
+  if (!badge && !tags) return '';
+  return `<div class="tile-tags">${badge}${tags}</div>`;
+}
+
+function paletteStripHtml(item) {
+  if (!item.palette || !item.palette.length) return '';
+  const segs = item.palette.map(hex => `<span style="background:${hex}"></span>`).join('');
+  return `<div class="tile-palette">${segs}</div>`;
+}
+
+function makeTile(cat, item, idx, badgeText, natural) {
+  const tile = document.createElement('div');
+  tile.className = 'tile' + (natural ? ' tile-natural' : '') + (selectedIds.has(item.id) ? ' selected' : '') + (item.starred ? ' starred' : '');
+  tile.draggable = !natural; // disable native drag for original-ratio (wall) tiles
+  tile.dataset.itemId = item.id;
+  tile.innerHTML = `<img src="${item.src}" alt="" loading="lazy">${paletteStripHtml(item)}<button class="tile-select" title="Select"></button><button class="tile-star" title="Star">&#9733;</button>${tileTagsHtml(item, badgeText)}<button class="tile-del" title="Remove">&times;</button>`;
+
+  tile.querySelector('img').addEventListener('click', (e) => {
+    if (e.shiftKey || e.metaKey || e.ctrlKey) { toggleSelect(item.id); return; }
+    openLightbox(cat.id, idx);
+  });
+  tile.querySelector('.tile-select').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSelect(item.id);
+  });
+  tile.querySelector('.tile-star').addEventListener('click', (e) => {
+    e.stopPropagation();
+    item.starred = !item.starred;
+    saveCurrentProject();
+    render();
+  });
+  tile.querySelector('.tile-del').addEventListener('click', (e) => {
+    e.stopPropagation();
+    cat.items = cat.items.filter(i => i.id !== item.id);
+    selectedIds.delete(item.id);
+    saveCurrentProject();
+    render();
+  });
+
+  if (!natural) {
+    tile.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('application/x-moodboard-item', item.id);
+      e.dataTransfer.effectAllowed = 'move';
+      tile.classList.add('dragging');
+    });
+    tile.addEventListener('dragend', () => tile.classList.remove('dragging'));
+    tile.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
+    tile.addEventListener('drop', (e) => {
+      e.stopPropagation();
+      const internalId = e.dataTransfer.getData('application/x-moodboard-item');
+      if (internalId) { e.preventDefault(); handleInternalDrop(internalId, cat, item.id); }
+    });
+  }
+
+  return tile;
+}
+
+function toggleSelect(itemId) {
+  if (selectedIds.has(itemId)) selectedIds.delete(itemId);
+  else selectedIds.add(itemId);
+  render();
+}
+
+function makeAddTile(cat) {
+  const tile = document.createElement('div');
+  tile.className = 'tile add-tile';
+  tile.innerHTML = `${svgPlus()}<span>Add</span>`;
+  tile.addEventListener('click', () => {
+    activeCategoryId = cat.id;
+    fileInput.click();
+  });
+  return tile;
+}
+
+function handleInternalDrop(itemId, targetCat, beforeItemId) {
+  const p = currentProject();
+  let sourceCat = null, item = null, srcIdx = -1;
+  for (const c of p.categories) {
+    const i = c.items.findIndex(x => x.id === itemId);
+    if (i > -1) { sourceCat = c; item = c.items[i]; srcIdx = i; break; }
+  }
+  if (!item) return;
+  sourceCat.items.splice(srcIdx, 1);
+  if (beforeItemId) {
+    const targetIdx = targetCat.items.findIndex(x => x.id === beforeItemId);
+    targetCat.items.splice(targetIdx > -1 ? targetIdx : targetCat.items.length, 0, item);
+  } else {
+    targetCat.items.push(item);
+  }
+  saveCurrentProject();
+  render();
+}
+
+async function handleFileDrop(fileList, cat) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  for (const f of files) {
+    try {
+      const dataUrl = await fileToDataURL(f);
+      cat.items.push({ id: uid(), src: dataUrl, tags: [], notes: '', addedAt: Date.now() });
+    } catch (err) { console.error(err); }
+  }
+  saveCurrentProject();
+  render();
+}
+
+function addImageToCategory(cat, src) {
+  cat.items.push({ id: uid(), src, tags: [], notes: '', addedAt: Date.now() });
+  saveCurrentProject();
+  render();
+}
+
+/* ---------------- File input (click-to-add) ---------------- */
+const fileInput = document.getElementById('fileInput');
+fileInput.addEventListener('change', () => {
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === activeCategoryId) || p.categories[0];
+  if (fileInput.files.length) handleFileDrop(fileInput.files, cat);
+  fileInput.value = '';
+});
+
+/* ---------------- Global drag & drop (drop anywhere -> active/first category) ---------------- */
+const dropOverlay = document.getElementById('dropOverlay');
+let dragCounter = 0;
+window.addEventListener('dragenter', (e) => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  dragCounter++;
+  dropOverlay.classList.add('show');
+});
+window.addEventListener('dragleave', (e) => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  dragCounter--;
+  if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('show'); }
+});
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('show');
+  if (e.target.closest('.category')) return; // handled by category's own listener
+  if (e.dataTransfer.files && e.dataTransfer.files.length) {
+    const p = currentProject();
+    const cat = p.categories.find(c => c.id === activeCategoryId) || p.categories[0];
+    handleFileDrop(e.dataTransfer.files, cat);
+  }
+});
+// Safety net: whatever drags in this page (internal reorder, external files,
+// a cancelled drag) always ends with 'dragend' on the source element. Force
+// the overlay closed there so a mismatched enter/leave count can never leave
+// it stuck open.
+document.addEventListener('dragend', () => {
+  dragCounter = 0;
+  dropOverlay.classList.remove('show');
+});
+
+/* ---------------- Global paste (image or URL) ---------------- */
+window.addEventListener('paste', async (e) => {
+  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.isContentEditable)) return;
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === activeCategoryId) || p.categories[0];
+  if (!cat) return;
+  const items = e.clipboardData && e.clipboardData.items;
+  if (items) {
+    for (const it of items) {
+      if (it.type.startsWith('image/')) {
+        const file = it.getAsFile();
+        if (file) {
+          const dataUrl = await fileToDataURL(file);
+          addImageToCategory(cat, dataUrl);
+          toast(`Image added to "${cat.name}"`);
+          return;
+        }
+      }
+    }
+  }
+  const text = e.clipboardData.getData('text/plain');
+  if (text && looksLikeUrl(text.trim())) {
+    addImageToCategory(cat, text.trim());
+    toast(`Image added to "${cat.name}"`);
+  }
+});
+
+/* ---------------- Search ---------------- */
+searchInput.addEventListener('input', () => render());
+
+/* ---------------- Wall view toggle ---------------- */
+document.getElementById('wallBtn').addEventListener('click', () => {
+  wallMode = !wallMode;
+  // Left as-is on purpose: toggling wall while a category is expanded keeps
+  // that category expanded, switching just its tiles to original ratio.
+  document.getElementById('wallBtn').classList.toggle('active', wallMode);
+  render();
+});
+
+/* ---------------- Starred filter ---------------- */
+document.getElementById('starredBtn').addEventListener('click', () => {
+  starredOnly = !starredOnly;
+  document.getElementById('starredBtn').classList.toggle('active', starredOnly);
+  render();
+});
+
+/* ---------------- Export current view ---------------- */
+document.getElementById('exportBtn').addEventListener('click', async () => {
+  toast('Rendering export…');
+  try {
+    const canvas = await html2canvas(mainEl, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor,
+      useCORS: true,
+      scale: 2
+    });
+    const p = currentProject();
+    const safeName = (p && p.name || 'moodboard').replace(/[^a-z0-9\-_ ]/gi, '').trim() || 'moodboard';
+    const link = document.createElement('a');
+    link.download = `${safeName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (err) {
+    console.error(err);
+    toast('Export failed — some remote images may block cross-origin capture');
+  }
+});
+
+/* ---------------- Bulk selection bar ---------------- */
+const bulkBar = document.getElementById('bulkBar');
+function renderBulkBar() {
+  const p = currentProject();
+  if (!p || selectedIds.size === 0) { bulkBar.classList.remove('show'); return; }
+  bulkBar.classList.add('show');
+  document.getElementById('bulkCount').textContent = `${selectedIds.size} selected`;
+  const moveSel = document.getElementById('bulkMove');
+  const prevVal = moveSel.value;
+  moveSel.innerHTML = `<option value="">Move to&hellip;</option>` +
+    p.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  moveSel.value = prevVal;
+}
+document.getElementById('bulkMove').addEventListener('change', (e) => {
+  const targetId = e.target.value;
+  if (!targetId) return;
+  const p = currentProject();
+  const targetCat = p.categories.find(c => c.id === targetId);
+  selectedIds.forEach(id => {
+    const found = findItemLocation(id);
+    if (found && found.cat.id !== targetId) {
+      found.cat.items.splice(found.idx, 1);
+      targetCat.items.push(found.item);
+    }
+  });
+  saveCurrentProject();
+  selectedIds.clear();
+  e.target.value = '';
+  render();
+});
+document.getElementById('bulkTagInput').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  if (!val) return;
+  selectedIds.forEach(id => {
+    const found = findItemLocation(id);
+    if (found) {
+      found.item.tags = found.item.tags || [];
+      if (!found.item.tags.includes(val)) found.item.tags.push(val);
+    }
+  });
+  saveCurrentProject();
+  e.target.value = '';
+  render();
+});
+document.getElementById('bulkDelete').addEventListener('click', () => {
+  if (!confirm(`Delete ${selectedIds.size} image(s)?`)) return;
+  const p = currentProject();
+  p.categories.forEach(c => { c.items = c.items.filter(i => !selectedIds.has(i.id)); });
+  saveCurrentProject();
+  selectedIds.clear();
+  render();
+});
+document.getElementById('bulkClear').addEventListener('click', () => {
+  selectedIds.clear();
+  render();
+});
+
+/* ---------------- Lightbox ---------------- */
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+const lbMove = document.getElementById('lbMove');
+const lbTags = document.getElementById('lbTags');
+const lbNotes = document.getElementById('lbNotes');
+const lbPaletteRow = document.getElementById('lbPaletteRow');
+const lbStar = document.getElementById('lbStar');
+
+function openLightbox(categoryId, index) {
+  lb.categoryId = categoryId;
+  lb.index = index;
+  renderLightbox();
+  lightbox.classList.add('open');
+}
+function renderLightbox() {
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === lb.categoryId);
+  if (!cat || !cat.items[lb.index]) { closeLightbox(); return; }
+  const item = cat.items[lb.index];
+  lbImg.src = item.src;
+  lbMove.innerHTML = p.categories.map(c =>
+    `<option value="${c.id}" ${c.id === cat.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+  renderLbTags(item);
+  renderLbPalette(item);
+  lbNotes.value = item.notes || '';
+  lbNotes.oninput = () => { item.notes = lbNotes.value; };
+  lbNotes.onblur = () => { saveCurrentProject(); };
+  lbStar.innerHTML = item.starred ? '&#9733; Starred' : '&#9734; Star';
+  lbStar.classList.toggle('active', !!item.starred);
+  lbStar.onclick = () => {
+    item.starred = !item.starred;
+    saveCurrentProject();
+    renderLightbox();
+    render();
+  };
+}
+function renderLbPalette(item) {
+  lbPaletteRow.innerHTML = '';
+  (item.palette || []).forEach(hex => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    sw.style.background = hex;
+    sw.dataset.hex = hex;
+    sw.title = `${hex} — click to copy`;
+    sw.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(hex).then(() => toast(`Copied ${hex}`)).catch(() => {});
+      }
+    });
+    lbPaletteRow.appendChild(sw);
+  });
+}
+function renderLbTags(item) {
+  lbTags.innerHTML = '';
+  (item.tags || []).forEach((tag, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'lb-tag';
+    chip.innerHTML = `${escapeHtml(tag)} <button title="Remove tag">&times;</button>`;
+    chip.querySelector('button').addEventListener('click', () => {
+      item.tags.splice(i, 1);
+      saveCurrentProject();
+      renderLbTags(item);
+      render();
+    });
+    lbTags.appendChild(chip);
+  });
+  const input = document.createElement('input');
+  input.className = 'lb-tag-input';
+  input.type = 'text';
+  input.placeholder = 'Add tag…';
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = input.value.trim().replace(/,$/, '');
+      if (val) {
+        item.tags = item.tags || [];
+        if (!item.tags.includes(val)) item.tags.push(val);
+        saveCurrentProject();
+        renderLbTags(item);
+        render();
+      }
+      input.value = '';
+    }
+  });
+  lbTags.appendChild(input);
+}
+function closeLightbox() { lightbox.classList.remove('open'); }
+function lbStep(delta) {
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === lb.categoryId);
+  if (!cat || !cat.items.length) return;
+  lb.index = (lb.index + delta + cat.items.length) % cat.items.length;
+  renderLightbox();
+}
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+document.getElementById('lbPrev').addEventListener('click', () => lbStep(-1));
+document.getElementById('lbNext').addEventListener('click', () => lbStep(1));
+lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+document.getElementById('lbDelete').addEventListener('click', () => {
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === lb.categoryId);
+  if (!cat) return;
+  const item = cat.items[lb.index];
+  if (item) selectedIds.delete(item.id);
+  cat.items.splice(lb.index, 1);
+  saveCurrentProject();
+  render();
+  if (cat.items.length) { lb.index = Math.min(lb.index, cat.items.length - 1); renderLightbox(); }
+  else closeLightbox();
+});
+lbMove.addEventListener('change', () => {
+  const p = currentProject();
+  const fromCat = p.categories.find(c => c.id === lb.categoryId);
+  const toCat = p.categories.find(c => c.id === lbMove.value);
+  if (!fromCat || !toCat || fromCat === toCat) return;
+  const [item] = fromCat.items.splice(lb.index, 1);
+  toCat.items.push(item);
+  saveCurrentProject();
+  lb.categoryId = toCat.id;
+  lb.index = toCat.items.length - 1;
+  render();
+  renderLightbox();
+});
+document.addEventListener('keydown', (e) => {
+  if (!lightbox.classList.contains('open')) return;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'TEXTAREA' || ae.classList.contains('lb-tag-input'))) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') lbStep(-1);
+  if (e.key === 'ArrowRight') lbStep(1);
+});
+
+/* ---------------- Color palette extraction ---------------- */
+// Local (data:) images are always safe. Remote images are re-fetched as a
+// blob instead of reusing the on-page <img> — the tiles render images
+// without a CORS request, so re-pointing a new Image() at the same URL can
+// hit the browser's cache and inherit that non-CORS response, which taints
+// the canvas even when the server does support CORS.
+async function toDrawableUrl(src) {
+  if (src.startsWith('data:') || src.startsWith('blob:')) return src;
+  const res = await fetch(src, { mode: 'cors', cache: 'no-store' });
+  if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+async function extractPalette(src, n = 5) {
+  const drawableUrl = await toDrawableUrl(src);
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const w = 60, h = 60;
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = ctx.getImageData(0, 0, w, h).data;
+          const counts = new Map();
+          for (let i = 0; i < data.length; i += 4) {
+            const r = Math.round(data[i] / 32) * 32;
+            const g = Math.round(data[i + 1] / 32) * 32;
+            const b = Math.round(data[i + 2] / 32) * 32;
+            const key = r + ',' + g + ',' + b;
+            counts.set(key, (counts.get(key) || 0) + 1);
+          }
+          const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, n);
+          resolve(sorted.map(([key]) => key.split(',').map(Number)));
+        } catch (err) { reject(err); }
+      };
+      img.onerror = reject;
+      img.src = drawableUrl;
+    });
+  } finally {
+    if (drawableUrl.startsWith('blob:')) URL.revokeObjectURL(drawableUrl);
+  }
+}
+function rgbToHex([r, g, b]) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+document.getElementById('lbPalette').addEventListener('click', async () => {
+  const p = currentProject();
+  const cat = p.categories.find(c => c.id === lb.categoryId);
+  const item = cat && cat.items[lb.index];
+  if (!item) return;
+  toast('Reading colors…');
+  try {
+    const colors = await extractPalette(item.src);
+    item.palette = colors.map(rgbToHex);
+    saveCurrentProject();
+    renderLbPalette(item);
+    render();
+    toast(`${colors.length} colors attached to this image`);
+  } catch (err) {
+    console.error('Color extraction failed:', err);
+    toast('Could not read colors — this image\'s server blocks cross-origin access');
+  }
+});
+
+/* ---------------- Category add ---------------- */
+addCategoryBtn.addEventListener('click', () => {
+  const p = currentProject();
+  const name = prompt('New category name:', 'New category');
+  if (!name) return;
+  p.categories.push({ id: uid(), name: name.trim(), collapsed: false, items: [] });
+  saveCurrentProject();
+  render();
+});
+
+/* ---------------- Project switcher ---------------- */
+const projectSwitcher = document.getElementById('projectSwitcher');
+const projectSwitcherBtn = document.getElementById('projectSwitcherBtn');
+const projectMenu = document.getElementById('projectMenu');
+const pswLabel = document.getElementById('pswLabel');
+
+function getProjectPreviewSrcs(p, n) {
+  const srcs = [];
+  for (const cat of p.categories) {
+    for (const item of cat.items) {
+      srcs.push(item.src);
+      if (srcs.length >= n) return srcs;
+    }
+  }
+  return srcs;
+}
+
+function renderProjectSwitcher() {
+  const p = currentProject();
+  pswLabel.textContent = p ? p.name : 'Project';
+  projectMenu.innerHTML = '';
+  projects.forEach(proj => {
+    const row = document.createElement('div');
+    row.className = 'project-row' + (proj.id === currentProjectId ? ' active' : '');
+    const thumb = document.createElement('div');
+    const srcs = getProjectPreviewSrcs(proj, 4);
+    thumb.className = 'project-thumb' + (srcs.length ? '' : ' empty');
+    thumb.innerHTML = srcs.length ? srcs.map(s => `<img src="${s}" loading="lazy">`).join('') : '·';
+    const name = document.createElement('div');
+    name.className = 'project-row-name';
+    name.textContent = proj.name;
+    row.appendChild(thumb);
+    row.appendChild(name);
+    row.addEventListener('click', () => {
+      currentProjectId = proj.id;
+      resetViewState();
+      localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+      projectMenu.classList.remove('open');
+      render();
+    });
+    projectMenu.appendChild(row);
+  });
+}
+projectSwitcherBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  projectMenu.classList.toggle('open');
+});
+
+/* ---------------- Main menu (logo button) ---------------- */
+const mainMenuWrap = document.getElementById('mainMenuWrap');
+const mainMenuBtn = document.getElementById('mainMenuBtn');
+const mainMenu = document.getElementById('mainMenu');
+mainMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  mainMenu.classList.toggle('open');
+});
+// Auto-close the menu once one of its own actions has been triggered.
+mainMenu.addEventListener('click', (e) => {
+  if (e.target.closest('.menu-item')) mainMenu.classList.remove('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!projectSwitcher.contains(e.target)) projectMenu.classList.remove('open');
+  if (!mainMenuWrap.contains(e.target)) mainMenu.classList.remove('open');
+});
+
+document.getElementById('newProjectBtn').addEventListener('click', async () => {
+  const name = prompt('New project name:', 'New project');
+  if (!name) return;
+  const p = makeDefaultProject(name.trim());
+  p.categories.forEach(c => c.items = []); // new projects start empty
+  projects.push(p);
+  await idbPut(p);
+  currentProjectId = p.id;
+  resetViewState();
+  localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+  render();
+});
+
+document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
+  if (projects.length <= 1) { toast('At least one project must remain'); return; }
+  const p = currentProject();
+  if (!confirm(`Permanently delete project "${p.name}"?`)) return;
+  await idbDelete(p.id);
+  projects = projects.filter(x => x.id !== p.id);
+  currentProjectId = projects[0].id;
+  resetViewState();
+  localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+  render();
+});
+
+/* ---------------- JSON backup (export / import per project) ---------------- */
+function safeFileName(name) {
+  return (name || 'moodboard').replace(/[^a-z0-9\-_ ]/gi, '').trim() || 'moodboard';
+}
+
+function exportProjectJson(project) {
+  if (!project) return;
+  const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = `${safeFileName(project.name)}.json`;
+  link.href = url;
+  link.click();
+  URL.revokeObjectURL(url);
+  toast(`Saved "${project.name}" as JSON`);
+}
+
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  exportProjectJson(currentProject());
+});
+
+const jsonFileInput = document.getElementById('jsonFileInput');
+document.getElementById('importJsonBtn').addEventListener('click', () => jsonFileInput.click());
+jsonFileInput.addEventListener('change', async () => {
+  const file = jsonFileInput.files[0];
+  jsonFileInput.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.categories)) throw new Error('Missing categories array');
+    // Regenerate every id on import so it can never collide with what's
+    // already in this browser's IndexedDB (e.g. re-importing your own backup).
+    const imported = {
+      id: uid(),
+      name: data.name || 'Imported project',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      categories: data.categories.map(cat => ({
+        id: uid(),
+        name: cat.name || 'Untitled',
+        collapsed: !!cat.collapsed,
+        items: (Array.isArray(cat.items) ? cat.items : []).map(item => ({
+          id: uid(),
+          src: item.src,
+          tags: Array.isArray(item.tags) ? item.tags.slice() : [],
+          notes: item.notes || '',
+          palette: Array.isArray(item.palette) ? item.palette.slice() : undefined,
+          addedAt: Date.now()
+        }))
+      }))
+    };
+    projects.push(imported);
+    await idbPut(imported);
+    currentProjectId = imported.id;
+    resetViewState();
+    localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+    render();
+    toast(`Imported "${imported.name}"`);
+  } catch (err) {
+    console.error('Import failed:', err);
+    toast('Could not import — not a valid moodboard JSON file');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    exportProjectJson(currentProject());
+    return;
+  }
+  // Bare-letter shortcuts must not fire while typing anywhere in the app.
+  const ae = document.activeElement;
+  const isTyping = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+  if (!isTyping && !e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'w') {
+    e.preventDefault();
+    document.getElementById('wallBtn').click();
+  }
+});
+
+/* ---------------- Theme ---------------- */
+const THEMES = ['', 'theme-light', 'theme-gray', 'theme-graphite'];
+function applyTheme(i) {
+  THEMES.forEach(t => t && document.body.classList.remove(t));
+  if (THEMES[i]) document.body.classList.add(THEMES[i]);
+  localStorage.setItem('moodboard.theme', i);
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  let i = parseInt(localStorage.getItem('moodboard.theme') || '0', 10);
+  i = (i + 1) % THEMES.length;
+  applyTheme(i);
+});
+applyTheme(parseInt(localStorage.getItem('moodboard.theme') || '0', 10));
+
+/* ---------------- Boot ---------------- */
+loadAll().then(render);
+
+})();
+</script>
+</body>
+</html>
