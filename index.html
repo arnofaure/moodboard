@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Moodboard &mdash; 100% Free Moodboard Web App</title>
 <meta name="description" content="A 100% free moodboard web app, created for the love of stories by Arno Faure.">
+
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="shortcut icon" href="icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Moodboard &mdash; 100% Free Moodboard Web App">
+<meta property="og:description" content="A 100% free moodboard web app, created for the love of stories by Arno Faure.">
+<meta property="og:image" content="moodboard-opengraph.png">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Moodboard &mdash; 100% Free Moodboard Web App">
+<meta name="twitter:description" content="A 100% free moodboard web app, created for the love of stories by Arno Faure.">
+<meta name="twitter:image" content="moodboard-opengraph.png">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -88,23 +105,28 @@ header {
   border-bottom: 0.5px solid var(--border);
   flex-wrap: wrap;
 }
-.logo {
-  font-weight: 600; font-size: 14px; letter-spacing: 0.2px;
-  margin-right: 6px; white-space: nowrap;
-}
-.logo span { color: var(--text-muted); font-weight: 400; }
-
 /* ---------- Main menu (logo button + dropdown) ---------- */
 .tb-menu-wrap { position: relative; }
 .tb-logo-btn {
-  width: 34px; height: 34px;
-  display: flex; align-items: center; justify-content: center;
+  height: 34px;
+  padding: 0 8px 0 0;
+  display: flex; align-items: center; gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: border-color .12s, background .12s;
 }
 .tb-logo-btn:hover { border-color: var(--border-hover); background: var(--surface2); }
+.tb-logo-square {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tb-logo {
+  height: 20px; width: auto;
+  color: var(--text);
+  display: block;
+}
 
 .btn {
   background: var(--surface);
@@ -793,8 +815,19 @@ main {
 
 <header>
   <div class="tb-menu-wrap" id="mainMenuWrap">
-    <button class="tb-logo-btn" id="mainMenuBtn" title="Menu">
-      <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="2" fill="#3b82f6"/><rect x="13" y="2" width="9" height="9" rx="2" fill="#22c55e"/><rect x="2" y="13" width="9" height="9" rx="2" fill="#f59e0b"/><rect x="13" y="13" width="9" height="9" rx="2" fill="#ef4444"/></svg>
+    <button class="tb-logo-btn" id="mainMenuBtn" title="Menu" aria-label="Menu">
+      <span class="tb-logo-square">
+        <svg class="tb-logo" viewBox="0 0 362 661" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1,0,0,1,-4844.154675,-209.556655)">
+            <g transform="matrix(1,0,0,1,4484.954004,0)">
+              <g transform="matrix(7.335506,0,0,7.335506,-6600.710179,-2480.126447)">
+                <path d="M965.065,456.761L948.798,456.761L949.784,366.666L970.98,366.666L973.281,380.852L973.773,380.852L976.074,366.666L997.106,366.666L998.092,456.761L981.825,456.761L981.825,386.932L981.332,386.932L977.881,456.761L969.008,456.761L965.558,386.384L965.065,386.384L965.065,456.761Z" fill="currentColor"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </span>
+      <svg class="chevron-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
     </button>
     <div class="dropdown-panel" id="mainMenu">
       <button class="menu-item" id="importJsonBtn">
@@ -846,8 +879,6 @@ main {
     </div>
     <input type="file" id="jsonFileInput" accept="application/json" style="display:none;">
   </div>
-
-  <div class="logo">Moodboard <span>&mdash; free &amp; open</span></div>
 
   <div class="project-switcher" id="projectSwitcher">
     <button class="btn" id="projectSwitcherBtn">
@@ -1010,14 +1041,30 @@ function escapeHtml(s) {
 /* ---------------- Default data ---------------- */
 const DEFAULT_CATEGORIES = ['Characters', 'Sets', 'Textures', 'Colors'];
 
-// A few stable placeholder images (picsum.photos, deterministic IDs) so the
-// first project isn't empty — swap or delete freely.
+// A few stable placeholder photos (picsum.photos, deterministic IDs, each
+// one checked by hand so the first project reads as an actual moodboard
+// instead of random stock filler) — swap or delete freely.
 const SEED_IMAGES = {
-  'Characters': [{ id: 1005, tags: ['portrait', 'moody'] }, { id: 1011, tags: ['candid'] }, { id: 1027, tags: ['silhouette'] }],
-  'Sets': [{ id: 1015, tags: ['interior'] }, { id: 1039, tags: ['forest', 'nature'] }, { id: 1043, tags: ['urban'] }],
-  'Textures': [{ id: 1069, tags: ['rough', 'stone'] }, { id: 1074, tags: ['wood'] }, { id: 1077, tags: ['metal'] }],
-  'Colors': [{ id: 1080, tags: ['warm'] }, { id: 1084, tags: ['cool'] }, { id: 1082, tags: ['neutral'] }]
+  'Characters': [
+    { id: 1027, tags: ['portrait', 'moody'] },
+    { id: 823, tags: ['candid'] },
+    { id: 338, tags: ['silhouette', 'moody'] }
+  ],
+  'Sets': [
+    { id: 177, tags: ['mountains', 'nature'] },
+    { id: 236, tags: ['coastal'] },
+    { id: 903, tags: ['night', 'landscape'] }
+  ],
+  'Textures': [
+    { id: 400, tags: ['leaves', 'nature'] },
+    { id: 1080, tags: ['fruit', 'pattern'] },
+    { id: 1082, tags: ['pattern', 'monochrome'] }
+  ]
 };
+
+// Colors start as flat hex swatches (not photos) — same as the manual
+// "+ Color" tool, so they're consistent with what users add themselves.
+const SEED_COLORS = ['#3b82f6', '#c9a27e', '#4b5b45'];
 
 function makeDefaultProject(name) {
   return {
@@ -1029,13 +1076,21 @@ function makeDefaultProject(name) {
       id: uid(),
       name: catName,
       collapsed: false,
-      items: (SEED_IMAGES[catName] || []).map(seed => ({
-        id: uid(),
-        src: `https://picsum.photos/id/${seed.id}/600/450`,
-        tags: seed.tags.slice(),
-        notes: '',
-        addedAt: Date.now()
-      }))
+      items: catName === 'Colors'
+        ? SEED_COLORS.map(hex => ({
+            id: uid(),
+            src: colorSwatchDataUrl(hex),
+            tags: [nearestColorName(hex), hex],
+            notes: '',
+            addedAt: Date.now()
+          }))
+        : (SEED_IMAGES[catName] || []).map(seed => ({
+            id: uid(),
+            src: `https://picsum.photos/id/${seed.id}/600/450`,
+            tags: seed.tags.slice(),
+            notes: '',
+            addedAt: Date.now()
+          }))
     }))
   };
 }
