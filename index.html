@@ -391,17 +391,24 @@ main {
 
 .tile {
   position: relative;
-  aspect-ratio: 1 / 1;
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface2);
   border: 1px solid var(--border);
   cursor: grab;
   transition: border-color .12s;
+  display: flex;
+  flex-direction: column;
 }
 .tile:hover { border-color: var(--border-hover); }
 .tile.selected { outline: 2px solid var(--flag-blue); outline-offset: -2px; }
 .tile.dragging { opacity: 0.35; }
+.tile-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  flex-shrink: 0;
+}
 .tile img {
   width: 100%; height: 100%;
   object-fit: cover;
@@ -410,12 +417,11 @@ main {
 }
 /* Natural-ratio tiles: only in the wall view */
 .tile.tile-natural {
-  aspect-ratio: auto;
-  display: block;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
   margin: 0 0 16px;
 }
+.tile.tile-natural .tile-media { aspect-ratio: auto; }
 .tile.tile-natural img {
   height: auto;
   object-fit: initial;
@@ -426,13 +432,12 @@ main {
   pointer-events: none;
 }
 body.mood-mode .tile-mood { display: block; }
+/* The extracted-palette strip sits below the image, in normal flow — not
+   overlaid on top of the photo — so it never competes with the tags. */
 .tile-palette {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 10px;
+  flex-shrink: 0;
+  height: 14px;
   display: flex;
-  /* No z-index: DOM order alone (it comes before .tile-select/.tile-tags/
-     etc.) already puts it beneath them; an explicit z-index here would
-     outrank those siblings' auto stacking and mask the tags. */
 }
 .tile-palette span { flex: 1; }
 
@@ -1532,7 +1537,17 @@ function makeTile(cat, item, idx, badgeText, natural) {
   tile.className = 'tile' + (natural ? ' tile-natural' : '') + (selectedIds.has(item.id) ? ' selected' : '') + (item.starred ? ' starred' : '');
   tile.draggable = !natural; // disable native drag for original-ratio (wall) tiles
   tile.dataset.itemId = item.id;
-  tile.innerHTML = `<img src="${item.src}" alt="" loading="lazy"><div class="tile-mood" style="background:${moodGradientCss(item)}"></div>${paletteStripHtml(item)}<button class="tile-select" title="Select"></button><button class="tile-star" title="Star">&#9733;</button>${tileTagsHtml(item, badgeText)}<button class="tile-del" title="Remove">&times;</button>`;
+  tile.innerHTML = `
+    <div class="tile-media">
+      <img src="${item.src}" alt="" loading="lazy">
+      <div class="tile-mood" style="background:${moodGradientCss(item)}"></div>
+      <button class="tile-select" title="Select"></button>
+      <button class="tile-star" title="Star">&#9733;</button>
+      ${tileTagsHtml(item, badgeText)}
+      <button class="tile-del" title="Remove">&times;</button>
+    </div>
+    ${paletteStripHtml(item)}
+  `;
 
   if (!item.moodGradient || !item.moodGradient.length) {
     ensureMoodGradient(item).then(stops => {
@@ -1582,25 +1597,35 @@ function makeTile(cat, item, idx, badgeText, natural) {
   return tile;
 }
 
-// "Mood" view: each tile can show a multicolor gradient echoing the actual
-// spatial layout of its colors (top-left to bottom-right) instead of the
-// photo — the gradient div sits on top of the <img> (pointer-events:none,
-// so clicks still reach the image below) and is only revealed while
-// body.mood-mode is active.
+// "Mood" view: each tile can show a mesh gradient — several radial blobs
+// sampled from real points in the image (4 corners + center), layered so
+// they blend into each other — instead of the photo. The gradient div sits
+// on top of the <img> (pointer-events:none, so clicks still reach the
+// image below) and is only revealed while body.mood-mode is active.
 function moodGradientCss(item) {
-  if (item.moodGradient && item.moodGradient.length) {
-    const stops = item.moodGradient;
-    const withPct = stops.map((hex, i) => `${hex} ${Math.round((i / (stops.length - 1)) * 100)}%`);
-    return `linear-gradient(135deg, ${withPct.join(', ')})`;
+  const pts = item.moodGradient;
+  if (pts && pts.length) {
+    const layers = pts.map(p => `radial-gradient(circle at ${p.x}% ${p.y}%, ${p.hex} 0%, transparent 65%)`);
+    layers.push(averageHex(pts.map(p => p.hex))); // base fill so there are no transparent gaps
+    return layers.join(', ');
   }
-  return 'linear-gradient(135deg, var(--surface2), var(--surface))';
+  return 'radial-gradient(circle, var(--surface2), var(--surface))';
+}
+
+function averageHex(hexes) {
+  const totals = hexes.reduce((acc, hex) => {
+    const [r, g, b] = hexToRgbArr(hex);
+    acc[0] += r; acc[1] += g; acc[2] += b;
+    return acc;
+  }, [0, 0, 0]);
+  return rgbToHex(totals.map(v => Math.round(v / hexes.length)));
 }
 
 async function ensureMoodGradient(item) {
   if (item.moodGradient && item.moodGradient.length) return item.moodGradient;
   try {
-    const stops = await extractGradientStops(item.src, 5);
-    item.moodGradient = stops.map(rgbToHex);
+    const points = await extractMeshPoints(item.src, 5);
+    item.moodGradient = points.map(p => ({ x: p.x, y: p.y, hex: rgbToHex(p.rgb) }));
     saveCurrentProject();
     return item.moodGradient;
   } catch (err) {
@@ -2141,12 +2166,11 @@ function rgbToHex([r, g, b]) {
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-// Samples the image along its top-left → bottom-right diagonal in n bands
-// and averages each band's actual pixels — unlike extractPalette (which
-// finds the most frequent colors regardless of where they sit), this keeps
-// the real spatial order, so the resulting gradient echoes the image's
-// own layout (e.g. sky color first, ground color last).
-async function extractGradientStops(src, n = 5) {
+// Samples n points spread across the image (4 corners + center) and
+// averages a small patch of real pixels around each — used to build a mesh
+// gradient whose blobs sit roughly where those colors actually are in the
+// photo (unlike extractPalette, which ranks colors by frequency only).
+async function extractMeshPoints(src, n = 5) {
   const drawableUrl = await toDrawableUrl(src);
   try {
     return await new Promise((resolve, reject) => {
@@ -2159,20 +2183,26 @@ async function extractGradientStops(src, n = 5) {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, size, size);
           const data = ctx.getImageData(0, 0, size, size).data;
-          const sums = Array.from({ length: n }, () => ({ r: 0, g: 0, b: 0, count: 0 }));
-          for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-              const t = (x + y) / (2 * (size - 1)); // 0 (top-left) .. 1 (bottom-right)
-              const band = Math.min(n - 1, Math.floor(t * n));
-              const i = (y * size + x) * 4;
-              const bucket = sums[band];
-              bucket.r += data[i]; bucket.g += data[i + 1]; bucket.b += data[i + 2];
-              bucket.count++;
+          const positions = [
+            { x: 18, y: 18 }, { x: 82, y: 18 },
+            { x: 18, y: 82 }, { x: 82, y: 82 },
+            { x: 50, y: 50 }
+          ].slice(0, n);
+          const patchRadius = Math.max(3, Math.round(size * 0.16));
+          const sampleAt = (px, py) => {
+            const cx = Math.round((px / 100) * (size - 1));
+            const cy = Math.round((py / 100) * (size - 1));
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let y = Math.max(0, cy - patchRadius); y <= Math.min(size - 1, cy + patchRadius); y++) {
+              for (let x = Math.max(0, cx - patchRadius); x <= Math.min(size - 1, cx + patchRadius); x++) {
+                const i = (y * size + x) * 4;
+                r += data[i]; g += data[i + 1]; b += data[i + 2];
+                count++;
+              }
             }
-          }
-          resolve(sums.map(({ r, g, b, count }) => count
-            ? [Math.round(r / count), Math.round(g / count), Math.round(b / count)]
-            : [128, 128, 128]));
+            return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
+          };
+          resolve(positions.map(p => ({ x: p.x, y: p.y, rgb: sampleAt(p.x, p.y) })));
         } catch (err) { reject(err); }
       };
       img.onerror = reject;
