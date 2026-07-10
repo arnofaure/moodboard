@@ -397,6 +397,7 @@ main {
   background: var(--surface2);
   border: 1px solid var(--border);
   cursor: grab;
+  transition: border-color .12s, filter .4s;
 }
 .tile:hover { border-color: var(--border-hover); }
 .tile.selected { outline: 2px solid var(--flag-blue); outline-offset: -2px; }
@@ -420,15 +421,15 @@ main {
   object-fit: initial;
 }
 .tile-palette {
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 5px;
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 10px;
   display: flex;
   z-index: 2;
 }
 .tile-palette span { flex: 1; }
 
 .tile .tile-del {
-  position: absolute; top: 8px; right: 4px;
+  position: absolute; top: 4px; right: 4px;
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.55);
@@ -443,7 +444,7 @@ main {
 .tile .tile-del:hover { background: var(--danger); }
 
 .tile .tile-select {
-  position: absolute; top: 8px; left: 4px;
+  position: absolute; top: 4px; left: 4px;
   width: 18px; height: 18px;
   border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,0.75);
@@ -459,7 +460,7 @@ main {
 .tile.selected .tile-select::after { content: '✓'; }
 
 .tile .tile-star {
-  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.35);
@@ -1517,6 +1518,12 @@ function makeTile(cat, item, idx, badgeText, natural) {
   tile.dataset.itemId = item.id;
   tile.innerHTML = `<img src="${item.src}" alt="" loading="lazy">${paletteStripHtml(item)}<button class="tile-select" title="Select"></button><button class="tile-star" title="Star">&#9733;</button>${tileTagsHtml(item, badgeText)}<button class="tile-del" title="Remove">&times;</button>`;
 
+  if (item.avgColor) {
+    applyMoodGlow(tile, item.avgColor);
+  } else if (!item.avgColorFailed) {
+    ensureAvgColor(item).then(rgb => { if (rgb) applyMoodGlow(tile, rgb); });
+  }
+
   tile.querySelector('img').addEventListener('click', (e) => {
     if (e.shiftKey || e.metaKey || e.ctrlKey) { toggleSelect(item.id); return; }
     openLightbox(cat.id, idx);
@@ -1555,6 +1562,28 @@ function makeTile(cat, item, idx, badgeText, natural) {
   }
 
   return tile;
+}
+
+// Each thumbnail gets its own soft "mood" glow, tinted with its dominant
+// color — a per-image atmosphere rather than a generic category summary.
+// The color is computed once (reusing the palette-extraction pipeline) and
+// cached on the item so it only ever runs once per image.
+function applyMoodGlow(tile, [r, g, b]) {
+  // drop-shadow (not box-shadow) because .tile has overflow:hidden to clip
+  // the image to its rounded corners, which would also clip a box-shadow.
+  tile.style.filter = `drop-shadow(0 8px 20px rgba(${r}, ${g}, ${b}, 0.55))`;
+}
+
+async function ensureAvgColor(item) {
+  try {
+    const [rgb] = await extractPalette(item.src, 1);
+    item.avgColor = rgb;
+    saveCurrentProject();
+    return rgb;
+  } catch (err) {
+    item.avgColorFailed = true;
+    return null;
+  }
 }
 
 function toggleSelect(itemId) {
