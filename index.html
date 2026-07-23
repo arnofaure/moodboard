@@ -1235,6 +1235,11 @@ function passesFilters(item, cat, query, starred) {
 function render() {
   const p = currentProject();
   if (!p) return;
+  // Rebuilding mainEl's contents from scratch momentarily collapses the
+  // page's height, which makes the browser clamp window.scrollY to the
+  // shrunk max before the content is rebuilt — restore it once the new
+  // content is in place, or every drag reorder jumps the page to the top.
+  const scrollY = window.scrollY;
   renderProjectSwitcher();
   mainEl.innerHTML = '';
 
@@ -1259,6 +1264,7 @@ function render() {
       if (catEl) mainEl.appendChild(catEl);
       addCategoryBtn.style.display = 'none';
       renderBulkBar();
+      window.scrollTo(0, scrollY);
       return;
     }
   }
@@ -1267,6 +1273,7 @@ function render() {
     addCategoryBtn.style.display = 'none';
     mainEl.appendChild(renderWall(p, query));
     renderBulkBar();
+    window.scrollTo(0, scrollY);
     return;
   }
 
@@ -1300,6 +1307,7 @@ function render() {
 
   addCategoryBtn.style.display = 'block';
   renderBulkBar();
+  window.scrollTo(0, scrollY);
 }
 
 function renderWall(p, query) {
@@ -1521,31 +1529,29 @@ function renderCategory(cat, p, query, expanded, natural) {
   catEl.appendChild(head);
   catEl.appendChild(body);
 
-  if (!filtering) {
-    const dndTypes = ['Files', 'text/plain', 'application/x-moodboard-item', 'application/x-moodboard-category'];
-    ['dragenter', 'dragover'].forEach(ev => catEl.addEventListener(ev, (e) => {
-      if (!dndTypes.some(t => e.dataTransfer.types.includes(t))) return;
+  const dndTypes = ['Files', 'text/plain', 'application/x-moodboard-item', 'application/x-moodboard-category'];
+  ['dragenter', 'dragover'].forEach(ev => catEl.addEventListener(ev, (e) => {
+    if (!dndTypes.some(t => e.dataTransfer.types.includes(t))) return;
+    e.preventDefault();
+    catEl.classList.add('dragover');
+  }));
+  ['dragleave'].forEach(ev => catEl.addEventListener(ev, (e) => {
+    if (e.target === catEl) catEl.classList.remove('dragover');
+  }));
+  catEl.addEventListener('drop', (e) => {
+    catEl.classList.remove('dragover');
+    const draggedCatId = e.dataTransfer.getData('application/x-moodboard-category');
+    if (draggedCatId) { e.preventDefault(); handleCategoryDrop(draggedCatId, cat.id); return; }
+    const internalId = e.dataTransfer.getData('application/x-moodboard-item');
+    if (internalId) { e.preventDefault(); handleInternalDrop(internalId, cat, null); return; }
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
       e.preventDefault();
-      catEl.classList.add('dragover');
-    }));
-    ['dragleave'].forEach(ev => catEl.addEventListener(ev, (e) => {
-      if (e.target === catEl) catEl.classList.remove('dragover');
-    }));
-    catEl.addEventListener('drop', (e) => {
-      catEl.classList.remove('dragover');
-      const draggedCatId = e.dataTransfer.getData('application/x-moodboard-category');
-      if (draggedCatId) { e.preventDefault(); handleCategoryDrop(draggedCatId, cat.id); return; }
-      const internalId = e.dataTransfer.getData('application/x-moodboard-item');
-      if (internalId) { e.preventDefault(); handleInternalDrop(internalId, cat, null); return; }
-      if (e.dataTransfer.files && e.dataTransfer.files.length) {
-        e.preventDefault();
-        handleFileDrop(e.dataTransfer.files, cat);
-        return;
-      }
-      const text = e.dataTransfer.getData('text/plain');
-      if (text && looksLikeUrl(text)) { e.preventDefault(); addImageToCategory(cat, text.trim()); }
-    });
-  }
+      handleFileDrop(e.dataTransfer.files, cat);
+      return;
+    }
+    const text = e.dataTransfer.getData('text/plain');
+    if (text && looksLikeUrl(text)) { e.preventDefault(); addImageToCategory(cat, text.trim()); }
+  });
 
   catEl.addEventListener('click', () => { activeCategoryId = cat.id; });
 
@@ -1568,7 +1574,7 @@ function paletteStripHtml(item) {
 function makeTile(cat, item, idx, badgeText, natural) {
   const tile = document.createElement('div');
   tile.className = 'tile' + (natural ? ' tile-natural' : '') + (selectedIds.has(item.id) ? ' selected' : '') + (item.starred ? ' starred' : '');
-  tile.draggable = !natural; // disable native drag for original-ratio (wall) tiles
+  tile.draggable = true;
   tile.dataset.itemId = item.id;
   tile.innerHTML = `
     <div class="tile-media">
@@ -1612,20 +1618,23 @@ function makeTile(cat, item, idx, badgeText, natural) {
     render();
   });
 
-  if (!natural) {
-    tile.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('application/x-moodboard-item', item.id);
-      e.dataTransfer.effectAllowed = 'move';
-      tile.classList.add('dragging');
-    });
-    tile.addEventListener('dragend', () => tile.classList.remove('dragging'));
-    tile.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
-    tile.addEventListener('drop', (e) => {
-      e.stopPropagation();
-      const internalId = e.dataTransfer.getData('application/x-moodboard-item');
-      if (internalId) { e.preventDefault(); handleInternalDrop(internalId, cat, item.id); }
-    });
-  }
+  tile.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('application/x-moodboard-item', item.id);
+    e.dataTransfer.effectAllowed = 'move';
+    tile.classList.add('dragging');
+  });
+  tile.addEventListener('dragend', () => tile.classList.remove('dragging'));
+  tile.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
+  tile.addEventListener('drop', (e) => {
+    e.stopPropagation();
+    const internalId = e.dataTransfer.getData('application/x-moodboard-item');
+    if (internalId) {
+      e.preventDefault();
+      const rect = tile.getBoundingClientRect();
+      const insertAfter = e.clientX > rect.left + rect.width / 2;
+      handleInternalDrop(internalId, cat, item.id, insertAfter);
+    }
+  });
 
   return tile;
 }
@@ -1683,7 +1692,8 @@ function makeAddTile(cat) {
   return tile;
 }
 
-function handleInternalDrop(itemId, targetCat, beforeItemId) {
+function handleInternalDrop(itemId, targetCat, targetItemId, insertAfter) {
+  if (itemId === targetItemId) return;
   const p = currentProject();
   let sourceCat = null, item = null, srcIdx = -1;
   for (const c of p.categories) {
@@ -1691,13 +1701,29 @@ function handleInternalDrop(itemId, targetCat, beforeItemId) {
     if (i > -1) { sourceCat = c; item = c.items[i]; srcIdx = i; break; }
   }
   if (!item) return;
-  sourceCat.items.splice(srcIdx, 1);
-  if (beforeItemId) {
-    const targetIdx = targetCat.items.findIndex(x => x.id === beforeItemId);
-    targetCat.items.splice(targetIdx > -1 ? targetIdx : targetCat.items.length, 0, item);
+
+  // Resolve the insertion index against the arrays as they are *before* the
+  // source item is removed, then correct for the shift caused by removing it
+  // — otherwise reordering within the same category is off by one and an
+  // adjacent-item swap silently becomes a no-op (the source, once removed,
+  // shifts everything after it down by one, including the target).
+  let targetIdx;
+  if (targetItemId) {
+    targetIdx = targetCat.items.findIndex(x => x.id === targetItemId);
+    // Dropping on the tile immediately after the dragged one, in the same
+    // category, means "insert before it" — which is a no-op, since that's
+    // already where it sits. Whatever half of the tile the cursor lands on,
+    // that drop can only mean "swap with it", so force insert-after here
+    // instead of relying on which half of the target tile was released on.
+    const isImmediateNext = sourceCat === targetCat && targetIdx === srcIdx + 1;
+    if (insertAfter || isImmediateNext) targetIdx++;
   } else {
-    targetCat.items.push(item);
+    targetIdx = targetCat.items.length;
   }
+  if (sourceCat === targetCat && targetIdx > srcIdx) targetIdx--;
+
+  sourceCat.items.splice(srcIdx, 1);
+  targetCat.items.splice(Math.max(0, Math.min(targetIdx, targetCat.items.length)), 0, item);
   saveCurrentProject();
   render();
 }
@@ -2163,6 +2189,32 @@ async function toDrawableUrl(src) {
   return URL.createObjectURL(blob);
 }
 
+function rgbToSatLight(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  return { s, l };
+}
+// "redmean" — a cheap, well-known approximation of perceptual RGB distance
+// (weights channels by how sensitive the eye is to each, roughly). Good
+// enough to decide "these two swatches basically look the same."
+function colorDistance(a, b) {
+  const rMean = (a[0] + b[0]) / 2;
+  const dr = a[0] - b[0], dg = a[1] - b[1], db = a[2] - b[2];
+  return Math.sqrt((2 + rMean / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rMean) / 256) * db * db);
+}
+// Raw pixel frequency alone under-represents small-but-vivid areas: a photo
+// with a huge flat sky/wall and a small saturated accent color (e.g. a red
+// awning) has its top slots swept by several near-identical shades of the
+// dominant color before the accent ever gets a look in, even though it's
+// the color a person would actually name first. So buckets get a
+// saturation-weighted score instead of raw count, and swatches are picked
+// greedily while skipping anything too close (by color distance) to one
+// already chosen — that's what stops near-duplicate shades of the same
+// color from filling every slot and crowding out the rest of the palette.
 async function extractPalette(src, n = 5) {
   const drawableUrl = await toDrawableUrl(src);
   try {
@@ -2178,14 +2230,34 @@ async function extractPalette(src, n = 5) {
           const data = ctx.getImageData(0, 0, w, h).data;
           const counts = new Map();
           for (let i = 0; i < data.length; i += 4) {
-            const r = Math.round(data[i] / 32) * 32;
-            const g = Math.round(data[i + 1] / 32) * 32;
-            const b = Math.round(data[i + 2] / 32) * 32;
+            const r = Math.min(255, Math.round(data[i] / 32) * 32);
+            const g = Math.min(255, Math.round(data[i + 1] / 32) * 32);
+            const b = Math.min(255, Math.round(data[i + 2] / 32) * 32);
             const key = r + ',' + g + ',' + b;
             counts.set(key, (counts.get(key) || 0) + 1);
           }
-          const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, n);
-          resolve(sorted.map(([key]) => key.split(',').map(Number)));
+          const scored = [...counts.entries()].map(([key, count]) => {
+            const rgb = key.split(',').map(Number);
+            const { s, l } = rgbToSatLight(rgb[0], rgb[1], rgb[2]);
+            // Taper the boost down near pure black/white, where "saturation"
+            // is numerically noisy but visually meaningless.
+            const vividness = s * Math.max(0, 1 - Math.abs(l - 0.5) * 1.6);
+            return { rgb, score: count * (1 + vividness * 1.5) };
+          }).sort((a, b) => b.score - a.score);
+
+          const picked = [];
+          for (const c of scored) {
+            if (picked.length >= n) break;
+            if (picked.some((p) => colorDistance(p.rgb, c.rgb) < 60)) continue;
+            picked.push(c);
+          }
+          // Diversity filtering can leave us short on a low-variety image —
+          // backfill with the next-best buckets regardless of closeness.
+          for (const c of scored) {
+            if (picked.length >= n) break;
+            if (!picked.includes(c)) picked.push(c);
+          }
+          resolve(picked.map((c) => c.rgb));
         } catch (err) { reject(err); }
       };
       img.onerror = reject;
