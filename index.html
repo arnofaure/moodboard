@@ -13,6 +13,12 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
 
+<!-- Installable as a standalone app (desktop/Android "Install", iOS "Add to Home Screen") -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Moodboard">
+
 <meta property="og:type" content="website">
 <meta property="og:title" content="Moodboard &mdash; 100% Free Moodboard Web App">
 <meta property="og:description" content="A 100% free moodboard web app, created for the love of stories by Arno Faure.">
@@ -2551,6 +2557,16 @@ document.addEventListener('keydown', (e) => {
 loadAll().then(render);
 
 })();
+</script>
+
+<script>
+// Registers the offline app-shell cache — lets the installed app (or a
+// browser tab) keep working without a network connection after first load.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+  });
+}
 </script>
 </body>
 </html>
