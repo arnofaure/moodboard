@@ -816,6 +816,88 @@ body.mood-mode .tile-mood { display: block; }
 }
 #help-close:hover { color: var(--text); }
 
+/* ---------- Version history modal ---------- */
+#history-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+#history-overlay.show { display: flex; }
+#history-modal {
+  position: relative;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 420px;
+  width: 100%;
+  padding: 24px;
+  color: var(--text);
+}
+#history-modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+#history-close {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+#history-close:hover { color: var(--text); }
+#history-list { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.history-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+}
+.history-row-time { flex: 1; font-size: 12px; color: var(--text); }
+.history-empty { text-align: center; padding: 24px 0; color: var(--text-muted); font-size: 12px; }
+.kb-mini-btn {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border-hover);
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.kb-mini-btn:hover { color: var(--text); background: var(--border-hover); }
+
+/* ---------- Backup reminder banner ---------- */
+.backup-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  background: var(--surface);
+  border: 0.5px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  font-size: 12.5px;
+  color: var(--text);
+  max-width: calc(100vw - 40px);
+}
+.backup-banner-dismiss {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; flex-shrink: 0;
+  border: none; border-radius: 50%; cursor: pointer;
+  background: var(--surface2); color: var(--text-dim);
+}
+.backup-banner-dismiss:hover { color: var(--text); background: var(--border-hover); }
+#menu-backup-folder.hide { display: none; }
+
 /* ---------- Page footer ---------- */
 #page-footer {
   padding: 16px 20px 24px;
@@ -863,6 +945,15 @@ body.mood-mode .tile-mood { display: block; }
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M8 3v5h7V3"/><path d="M7 21v-7h10v7"/></svg>
         Save project
         <span class="mi-shortcut">&#8984;S</span>
+      </button>
+      <div class="menu-sep"></div>
+      <button class="menu-item" id="menu-backup-folder">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M12 11v4"/><path d="m10 13 2 2 2-2"/></svg>
+        <span id="backup-folder-label">Auto-backup: Off</span>
+      </button>
+      <button class="menu-item" id="menu-version-history">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+        Version history
       </button>
       <div class="menu-sep"></div>
       <button class="menu-item" id="newProjectBtn">
@@ -1020,6 +1111,16 @@ body.mood-mode .tile-mood { display: block; }
   </div>
 </div>
 
+<div id="history-overlay">
+  <div id="history-modal">
+    <button id="history-close" title="Close">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <h2>Version history</h2>
+    <div id="history-list"></div>
+  </div>
+</div>
+
 <footer id="page-footer">
   &copy; 2026 Created for the love of stories by <a href="https://arnofaure.com" target="_blank" rel="noopener noreferrer">Arno Faure</a> &middot; Licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC 4.0</a>
 </footer>
@@ -1029,37 +1130,63 @@ body.mood-mode .tile-mood { display: block; }
 'use strict';
 
 /* ---------------- IndexedDB layer ---------------- */
+// v2 adds two small stores used only by the backup feature (see BACKUP
+// section below): 'history' (capped in-browser snapshots, keyPath 'at') and
+// 'handles' (the folder-backup FileSystemDirectoryHandle, which can't be
+// JSON-serialized so it can't live in localStorage — a keyless get/put by a
+// fixed string key, same pattern IndexedDB uses for any non-serializable value).
 const DB_NAME = 'moodboard-db';
 const STORE = 'projects';
+const HISTORY_STORE = 'history';
+const HANDLES_STORE = 'handles';
 let dbPromise = new Promise((resolve, reject) => {
-  const req = indexedDB.open(DB_NAME, 1);
+  const req = indexedDB.open(DB_NAME, 2);
   req.onupgradeneeded = () => {
-    req.result.createObjectStore(STORE, { keyPath: 'id' });
+    const db = req.result;
+    if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
+    if (!db.objectStoreNames.contains(HISTORY_STORE)) db.createObjectStore(HISTORY_STORE, { keyPath: 'at' });
+    if (!db.objectStoreNames.contains(HANDLES_STORE)) db.createObjectStore(HANDLES_STORE);
   };
   req.onsuccess = () => resolve(req.result);
   req.onerror = () => reject(req.error);
 });
 
-function idbTx(mode) {
-  return dbPromise.then(db => db.transaction(STORE, mode).objectStore(STORE));
+function idbTx(store, mode) {
+  return dbPromise.then(db => db.transaction(store, mode).objectStore(store));
 }
-function idbGetAll() {
-  return idbTx('readonly').then(store => new Promise((res, rej) => {
-    const req = store.getAll();
+function idbGetAll(store = STORE) {
+  return idbTx(store, 'readonly').then(s => new Promise((res, rej) => {
+    const req = s.getAll();
     req.onsuccess = () => res(req.result);
     req.onerror = () => rej(req.error);
   }));
 }
-function idbPut(project) {
-  return idbTx('readwrite').then(store => new Promise((res, rej) => {
-    const req = store.put(project);
+function idbPut(project, store = STORE) {
+  return idbTx(store, 'readwrite').then(s => new Promise((res, rej) => {
+    const req = s.put(project);
     req.onsuccess = () => res();
     req.onerror = () => rej(req.error);
   }));
 }
-function idbDelete(id) {
-  return idbTx('readwrite').then(store => new Promise((res, rej) => {
-    const req = store.delete(id);
+function idbDelete(id, store = STORE) {
+  return idbTx(store, 'readwrite').then(s => new Promise((res, rej) => {
+    const req = s.delete(id);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  }));
+}
+// Keyless get/put, used only by the HANDLES_STORE (no keyPath — the key is
+// passed explicitly, since a directory handle has no natural id field).
+function idbGetKeyed(store, key) {
+  return idbTx(store, 'readonly').then(s => new Promise((res, rej) => {
+    const req = s.get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  }));
+}
+function idbPutKeyed(store, key, value) {
+  return idbTx(store, 'readwrite').then(s => new Promise((res, rej) => {
+    const req = s.put(value, key);
     req.onsuccess = () => res();
     req.onerror = () => rej(req.error);
   }));
@@ -1185,6 +1312,297 @@ function saveCurrentProject() {
   if (!p) return;
   p.updatedAt = Date.now();
   idbPut(p);
+  triggerBackupHooks();
+}
+
+/* ---------------- BACKUP: folder auto-backup, reminder banner, version history ---------------- */
+// Three independent layers, weakest to strongest guarantee against losing a
+// project: (3) in-browser history survives a bad edit but not a browser data
+// wipe; (2) the reminder just nags you to Export manually, works in any
+// browser; (1) folder auto-backup writes real files to disk with zero
+// further clicks once granted, but needs the File System Access API
+// (Chrome/Edge only — feature-detected, hidden entirely elsewhere).
+//
+// Unlike the manual "Save project" button (which exports only the current
+// project), all three layers here snapshot every project in `projects` —
+// this is intentionally a fuller safety net than the one-off manual export.
+function nowStamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' +
+    pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds());
+}
+
+const BACKUP_LAST_KEY = 'moodboard.backup.lastAt';
+const BACKUP_SNOOZE_KEY = 'moodboard.backup.snoozeUntil';
+const HISTORY_LIMIT = 10;
+const HISTORY_MIN_GAP_MS = 5 * 60 * 1000;
+const AUTO_BACKUP_MIN_GAP_MS = 60 * 1000;
+const AUTO_BACKUP_FILE_LIMIT = 20;
+const REMINDER_DUE_MS = 7 * 24 * 60 * 60 * 1000;
+const REMINDER_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
+
+function markBackedUp() {
+  try { localStorage.setItem(BACKUP_LAST_KEY, String(Date.now())); } catch (e) { /* storage unavailable */ }
+}
+
+function getSavedDirHandle() {
+  return idbGetKeyed(HANDLES_STORE, 'backupDir').then(h => h || null).catch(() => null);
+}
+function setSavedDirHandle(handle) {
+  return idbPutKeyed(HANDLES_STORE, 'backupDir', handle);
+}
+
+// ---- Feature 1: folder auto-backup ----
+let backupDirHandle = null;
+let lastAutoBackupAt = 0;
+
+function backupFolderLabelEl() { return document.getElementById('backup-folder-label'); }
+
+function refreshBackupFolderLabel(state, name) {
+  const label = backupFolderLabelEl();
+  if (!label) return;
+  if (state === 'granted') label.textContent = 'Auto-backup: On' + (name ? ' — ' + name : '');
+  else if (state === 'needs-permission') label.textContent = 'Auto-backup: needs permission';
+  else label.textContent = 'Auto-backup: Off';
+}
+
+function pruneOldBackups(handle) {
+  const entries = [];
+  return (function collect() {
+    const iterator = handle.values();
+    function step() {
+      return iterator.next().then(res => {
+        if (res.done) return;
+        if (res.value.kind === 'file' && /^moodboard-backup-.*\.json$/.test(res.value.name)) entries.push(res.value.name);
+        return step();
+      });
+    }
+    return step();
+  })().then(() => {
+    entries.sort(); // timestamp-formatted names sort chronologically
+    const excess = entries.length - AUTO_BACKUP_FILE_LIMIT;
+    if (excess <= 0) return;
+    const toRemove = entries.slice(0, excess);
+    return Promise.all(toRemove.map(name => handle.removeEntry(name).catch(() => { /* already gone */ })));
+  });
+}
+
+function maybeWriteAutoBackup() {
+  if (!backupDirHandle) return;
+  const now = Date.now();
+  if (now - lastAutoBackupAt < AUTO_BACKUP_MIN_GAP_MS) return;
+  lastAutoBackupAt = now;
+  backupDirHandle.queryPermission({ mode: 'readwrite' }).then(state => {
+    if (state !== 'granted') { refreshBackupFolderLabel('needs-permission'); return; }
+    const name = 'moodboard-backup-' + nowStamp() + '.json';
+    return backupDirHandle.getFileHandle(name, { create: true }).then(fileHandle => {
+      return fileHandle.createWritable();
+    }).then(writable => {
+      return writable.write(JSON.stringify(projects, null, 2)).then(() => writable.close());
+    }).then(() => {
+      markBackedUp();
+      return pruneOldBackups(backupDirHandle);
+    });
+  }).catch(() => { /* permission revoked or disk error — silently skip, next save retries */ });
+}
+
+function chooseBackupFolder() {
+  if (!window.showDirectoryPicker) return;
+  window.showDirectoryPicker({ mode: 'readwrite' }).then(handle => {
+    backupDirHandle = handle;
+    return setSavedDirHandle(handle).then(() => {
+      refreshBackupFolderLabel('granted', handle.name);
+      lastAutoBackupAt = 0; // force an immediate first backup
+      maybeWriteAutoBackup();
+    });
+  }).catch(() => { /* user cancelled the picker */ });
+}
+
+function initAutoBackup() {
+  if (!window.showDirectoryPicker) return;
+  const btn = document.getElementById('menu-backup-folder');
+  if (!btn) return;
+  btn.classList.remove('hide');
+  btn.addEventListener('click', chooseBackupFolder);
+  getSavedDirHandle().then(handle => {
+    if (!handle) return;
+    return handle.queryPermission({ mode: 'readwrite' }).then(state => {
+      if (state === 'granted') {
+        backupDirHandle = handle;
+        refreshBackupFolderLabel('granted', handle.name);
+      } else {
+        // Browsers won't silently re-grant — clicking the button again
+        // re-requests permission on a real user gesture instead.
+        refreshBackupFolderLabel('needs-permission');
+        btn.removeEventListener('click', chooseBackupFolder);
+        btn.addEventListener('click', () => {
+          handle.requestPermission({ mode: 'readwrite' }).then(newState => {
+            if (newState === 'granted') {
+              backupDirHandle = handle;
+              refreshBackupFolderLabel('granted', handle.name);
+              maybeWriteAutoBackup();
+            }
+          });
+        });
+      }
+    });
+  });
+}
+
+// ---- Feature 2: periodic "please back up" reminder ----
+function boardHasContent() {
+  return projects.some(p => (p.categories || []).some(cat => (cat.items || []).length > 0));
+}
+
+function showBackupBanner() {
+  let banner = document.getElementById('backup-banner');
+  if (banner) return;
+  banner = document.createElement('div');
+  banner.id = 'backup-banner';
+  banner.className = 'backup-banner';
+  banner.innerHTML =
+    '<span>You haven\'t backed up your projects in a while.</span>' +
+    '<button type="button" class="kb-mini-btn" id="backup-banner-export">Export now</button>' +
+    '<button type="button" class="kb-mini-btn" id="backup-banner-snooze">Remind me in 3 days</button>' +
+    '<button type="button" class="backup-banner-dismiss" id="backup-banner-dismiss" title="Dismiss">' +
+    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+    '</button>';
+  document.body.appendChild(banner);
+  document.getElementById('backup-banner-export').addEventListener('click', () => {
+    document.getElementById('exportJsonBtn').click();
+    hideBackupBanner();
+  });
+  document.getElementById('backup-banner-snooze').addEventListener('click', () => {
+    try { localStorage.setItem(BACKUP_SNOOZE_KEY, String(Date.now() + REMINDER_SNOOZE_MS)); } catch (e) { /* storage unavailable */ }
+    hideBackupBanner();
+  });
+  document.getElementById('backup-banner-dismiss').addEventListener('click', hideBackupBanner);
+}
+function hideBackupBanner() {
+  const banner = document.getElementById('backup-banner');
+  if (banner) banner.remove();
+}
+
+function checkBackupReminder() {
+  if (!boardHasContent()) return;
+  const lastAt = parseInt(localStorage.getItem(BACKUP_LAST_KEY), 10);
+  const snoozeUntil = parseInt(localStorage.getItem(BACKUP_SNOOZE_KEY), 10);
+  if (snoozeUntil && Date.now() < snoozeUntil) return;
+  const due = !lastAt || (Date.now() - lastAt) > REMINDER_DUE_MS;
+  if (due) showBackupBanner();
+}
+
+// ---- Feature 3: in-browser version history ----
+let lastHistorySnapshotAt = 0;
+
+function maybePushHistorySnapshot() {
+  const now = Date.now();
+  if (now - lastHistorySnapshotAt < HISTORY_MIN_GAP_MS) return;
+  lastHistorySnapshotAt = now;
+  const entry = { at: now, projects: JSON.parse(JSON.stringify(projects)) };
+  idbPut(entry, HISTORY_STORE).then(() => idbGetAll(HISTORY_STORE)).then(history => {
+    history.sort((a, b) => a.at - b.at);
+    const excess = history.length - HISTORY_LIMIT;
+    if (excess > 0) {
+      return Promise.all(history.slice(0, excess).map(e => idbDelete(e.at, HISTORY_STORE)));
+    }
+  }).catch(() => { /* storage full or unavailable — skip this snapshot */ });
+}
+
+function formatHistoryStamp(at) {
+  const d = new Date(at);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function restoreFromHistory(entry) {
+  const restored = Array.isArray(entry.projects) ? entry.projects : [];
+  if (!restored.length) { toast('This snapshot could not be restored.'); return; }
+  const restoredIds = new Set(restored.map(p => p.id));
+  const toRemove = projects.filter(p => !restoredIds.has(p.id));
+  Promise.all(restored.map(p => idbPut(p)))
+    .then(() => Promise.all(toRemove.map(p => idbDelete(p.id))))
+    .then(() => {
+      projects = restored;
+      projects.sort((a, b) => a.createdAt - b.createdAt);
+      currentProjectId = projects[0].id;
+      localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+      resetViewState();
+      render();
+      document.getElementById('history-overlay').classList.remove('show');
+      toast('Restored from history snapshot');
+    });
+}
+
+function renderHistoryList() {
+  const list = document.getElementById('history-list');
+  idbGetAll(HISTORY_STORE).then(history => {
+    history.sort((a, b) => b.at - a.at); // newest first
+    if (!history.length) {
+      list.innerHTML = '<p class="history-empty">No snapshots yet — they build up automatically as you work.</p>';
+      return;
+    }
+    list.innerHTML = history.map(entry =>
+      '<div class="history-row">' +
+      '<span class="history-row-time">' + escapeHtml(formatHistoryStamp(entry.at)) + '</span>' +
+      '<button type="button" class="kb-mini-btn" data-history-restore="' + entry.at + '">Restore</button>' +
+      '<button type="button" class="kb-mini-btn" data-history-download="' + entry.at + '">Download</button>' +
+      '</div>'
+    ).join('');
+    list.querySelectorAll('[data-history-restore]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const at = parseInt(btn.getAttribute('data-history-restore'), 10);
+        const entry = history.find(e => e.at === at);
+        if (!entry) return;
+        if (!confirm('Restore all projects to how they were on ' + formatHistoryStamp(entry.at) + '? Your current projects will be replaced (they stay in history themselves).')) return;
+        restoreFromHistory(entry);
+      });
+    });
+    list.querySelectorAll('[data-history-download]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const at = parseInt(btn.getAttribute('data-history-download'), 10);
+        const entry = history.find(e => e.at === at);
+        if (!entry) return;
+        const blob = new Blob([JSON.stringify(entry.projects, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'moodboard-history-' + entry.at + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    });
+  });
+}
+
+function initVersionHistory() {
+  document.getElementById('menu-version-history').addEventListener('click', () => {
+    renderHistoryList();
+    document.getElementById('history-overlay').classList.add('show');
+  });
+  document.getElementById('history-close').addEventListener('click', () => {
+    document.getElementById('history-overlay').classList.remove('show');
+  });
+  document.getElementById('history-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('history-overlay').classList.contains('show')) {
+      document.getElementById('history-overlay').classList.remove('show');
+    }
+  });
+}
+
+function triggerBackupHooks() {
+  maybeWriteAutoBackup();
+  maybePushHistorySnapshot();
+}
+
+function initBackupFeature() {
+  initAutoBackup();
+  initVersionHistory();
+  checkBackupReminder();
+  document.getElementById('exportJsonBtn').addEventListener('click', markBackedUp);
 }
 
 function findItemLocation(itemId) {
@@ -2430,6 +2848,7 @@ document.getElementById('newProjectBtn').addEventListener('click', async () => {
   resetViewState();
   localStorage.setItem('moodboard.currentProjectId', currentProjectId);
   render();
+  triggerBackupHooks();
 });
 
 document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
@@ -2442,6 +2861,7 @@ document.getElementById('deleteProjectBtn').addEventListener('click', async () =
   resetViewState();
   localStorage.setItem('moodboard.currentProjectId', currentProjectId);
   render();
+  triggerBackupHooks();
 });
 
 /* ---------------- JSON backup (export / import per project) ---------------- */
@@ -2503,6 +2923,7 @@ jsonFileInput.addEventListener('change', async () => {
     localStorage.setItem('moodboard.currentProjectId', currentProjectId);
     render();
     toast(`Imported "${imported.name}"`);
+    triggerBackupHooks();
   } catch (err) {
     console.error('Import failed:', err);
     toast('Could not import — not a valid moodboard JSON file');
@@ -2554,7 +2975,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---------------- Boot ---------------- */
-loadAll().then(render);
+loadAll().then(render).then(initBackupFeature);
 
 })();
 </script>
