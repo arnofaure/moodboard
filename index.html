@@ -517,6 +517,107 @@ body.mood-mode .tile-mood { display: block; }
 }
 .tile-tag.tile-cat { background: rgba(255,255,255,0.85); color: #111; font-weight: 600; }
 
+/* text card: keywords / a short sentence instead of an image */
+.tile.tile-text { background: var(--surface2); }
+.tile-text-handle {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 3px 0 0;
+  color: var(--text-dim);
+  cursor: grab;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.tile-text-handle:active { cursor: grabbing; }
+.tile-text-body {
+  flex: 1;
+  min-height: 90px;
+  display: block;
+  width: 100%;
+  border: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 14px;
+  cursor: text;
+}
+.tile-text-body:focus { outline: none; }
+.tile-text-body::placeholder { color: var(--text-dim); }
+.tile.tile-natural .tile-text-body { min-height: 60px; }
+
+/* bold text-card variant: big centered text on a chosen fg/bg color.
+   Named distinctly from the "Bold" style-picker button's .style-bold class
+   below — both live inside the same tile, so a shared class name would make
+   tile.querySelector('.style-bold') ambiguous between the two elements. */
+.tile-text-body.text-bold {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  padding: 22px 16px;
+  color: var(--card-text-color, #fff);
+  background: var(--card-bg-color, #3b82f6);
+}
+.tile-text-body.text-bold::placeholder { color: currentColor; opacity: .55; }
+
+.tile .tile-style-toggle {
+  position: absolute; bottom: 4px; left: 4px;
+  z-index: 4;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border-radius: 50%;
+  border: none;
+  opacity: 0;
+  transition: opacity .12s, background .12s;
+}
+.tile-style-toggle svg { width: 12px; height: 12px; }
+.tile:hover .tile-style-toggle, .tile-style-toggle.active { opacity: 1; }
+.tile-style-toggle:hover, .tile-style-toggle.active { background: var(--flag-blue); }
+
+.tile-style-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(15,15,15,0.92);
+}
+.tile-style-panel.open { display: flex; }
+.tile-style-row { display: flex; gap: 6px; }
+.tile-style-row button {
+  flex: 1;
+  font-size: 11px;
+  padding: 6px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+}
+.tile-style-row button.active { border-color: var(--flag-blue); background: rgba(59,130,246,0.25); }
+.tile-style-colors { display: none; gap: 12px; align-items: center; justify-content: center; }
+.tile-style-colors.show { display: flex; }
+.tile-style-colors label {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 9px; color: var(--text-muted);
+}
+.tile-style-colors input[type="color"] {
+  width: 28px; height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
 /* add-image tile */
 .tile.add-tile {
   aspect-ratio: 1 / 1;
@@ -571,6 +672,28 @@ body.mood-mode .tile-mood { display: block; }
   background: var(--bg);
   cursor: pointer;
 }
+
+.text-row {
+  display: none;
+  gap: 6px;
+  margin-top: 10px;
+}
+.text-row.open { display: flex; }
+.text-row textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 34px;
+  max-height: 120px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text);
+}
+.text-row textarea:focus { outline: none; border-color: var(--border-hover); }
+.text-row .btn { align-self: flex-end; }
 
 /* add-category */
 .add-category-btn {
@@ -1644,10 +1767,14 @@ function svgExpand() {
 function svgBack() {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`;
 }
+function svgPalette() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="8.5" cy="10.5" r="1" fill="currentColor"></circle><circle cx="12" cy="7.5" r="1" fill="currentColor"></circle><circle cx="15.5" cy="10.5" r="1" fill="currentColor"></circle><circle cx="9.5" cy="14.5" r="1" fill="currentColor"></circle></svg>`;
+}
 
 function matchesQuery(item, cat, query) {
   if (!query) return true;
   if (cat.name.toLowerCase().includes(query)) return true;
+  if (item.text && item.text.toLowerCase().includes(query)) return true;
   return (item.tags || []).some(t => t.toLowerCase().includes(query));
 }
 
@@ -1762,6 +1889,7 @@ function makeCollapsedCard(cat) {
   card.className = 'collapsed-card';
   const srcs = [];
   for (const item of cat.items) {
+    if (!item.src) continue;
     srcs.push(item.src);
     if (srcs.length >= 4) break;
   }
@@ -1815,6 +1943,7 @@ function renderCategory(cat, p, query, expanded, natural) {
       ${expanded ? '' : `<button class="btn expand-cat" title="View larger">${svgExpand()}</button>`}
       <button class="btn url-toggle" title="Add by URL">+ URL</button>
       <button class="btn color-toggle" title="Add a color swatch by hex or RGB">+ Color</button>
+      <button class="btn text-toggle" title="Add a card with keywords or a short sentence">+ Text</button>
       <button class="btn del-cat danger" title="Delete category">Delete</button>
     </div>
   `;
@@ -1863,6 +1992,11 @@ function renderCategory(cat, p, query, expanded, natural) {
     e.stopPropagation();
     colorRow.classList.toggle('open');
     if (colorRow.classList.contains('open')) colorRow.querySelector('.color-hex-input').focus();
+  });
+  head.querySelector('.text-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    textRow.classList.toggle('open');
+    if (textRow.classList.contains('open')) textRow.querySelector('textarea').focus();
   });
   head.querySelector('.del-cat').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1950,6 +2084,30 @@ function renderCategory(cat, p, query, expanded, natural) {
   });
   body.appendChild(colorRow);
 
+  const textRow = document.createElement('div');
+  textRow.className = 'text-row';
+  textRow.innerHTML = `
+    <textarea rows="1" placeholder="Keywords or a short sentence…"></textarea>
+    <button class="btn text-add-btn">Add</button>
+  `;
+  const textInput = textRow.querySelector('textarea');
+  function submitText() {
+    const val = textInput.value.trim();
+    if (!val) { toast('Type something first'); return; }
+    addTextToCategory(cat, val);
+    textInput.value = '';
+    textRow.classList.remove('open');
+  }
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); submitText(); }
+    else if (e.key === 'Escape') textRow.classList.remove('open');
+  });
+  textRow.querySelector('.text-add-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    submitText();
+  });
+  body.appendChild(textRow);
+
   catEl.appendChild(head);
   catEl.appendChild(body);
 
@@ -1996,34 +2154,110 @@ function paletteStripHtml(item) {
 }
 
 function makeTile(cat, item, idx, badgeText, natural) {
+  const isText = item.type === 'text';
   const tile = document.createElement('div');
-  tile.className = 'tile' + (natural ? ' tile-natural' : '') + (selectedIds.has(item.id) ? ' selected' : '') + (item.starred ? ' starred' : '');
+  tile.className = 'tile' + (isText ? ' tile-text' : '') + (natural ? ' tile-natural' : '') + (selectedIds.has(item.id) ? ' selected' : '') + (item.starred ? ' starred' : '');
   tile.draggable = true;
   tile.dataset.itemId = item.id;
-  tile.innerHTML = `
-    <div class="tile-media">
-      <img src="${item.src}" alt="" loading="lazy">
-      <div class="tile-mood" style="background:${moodGradientCss(item)}"></div>
+
+  if (isText) {
+    tile.innerHTML = `
+      <div class="tile-text-handle" title="Drag to reorder">&#10303;</div>
+      <textarea class="tile-text-body" placeholder="Keywords or a short sentence…">${escapeHtml(item.text || '')}</textarea>
       <button class="tile-select" title="Select"></button>
       <button class="tile-star" title="Star">&#9733;</button>
+      <button class="tile-style-toggle" title="Card style">${svgPalette()}</button>
       ${tileTagsHtml(item, badgeText)}
       <button class="tile-del" title="Remove">&times;</button>
-    </div>
-    ${paletteStripHtml(item)}
-  `;
+      <div class="tile-style-panel">
+        <div class="tile-style-row">
+          <button type="button" class="style-opt style-plain">Plain</button>
+          <button type="button" class="style-opt style-bold">Bold</button>
+        </div>
+        <div class="tile-style-colors">
+          <label>Text<input type="color" class="style-text-color" value="${item.textColor || '#ffffff'}"></label>
+          <label>Background<input type="color" class="style-bg-color" value="${item.bgColor || '#3b82f6'}"></label>
+        </div>
+      </div>
+    `;
+    const body = tile.querySelector('.tile-text-body');
+    body.addEventListener('input', () => { item.text = body.value; });
+    body.addEventListener('blur', () => { saveCurrentProject(); });
 
-  if (!item.moodGradient || !item.moodGradient.length) {
-    ensureMoodGradient(item).then(stops => {
-      if (!stops) return;
-      const moodDiv = tile.querySelector('.tile-mood');
-      if (moodDiv) moodDiv.style.background = moodGradientCss(item);
+    applyTextCardStyle(tile, item);
+
+    const panel = tile.querySelector('.tile-style-panel');
+    const stylePlainBtn = tile.querySelector('.style-plain');
+    const styleBoldBtn = tile.querySelector('.style-bold');
+    const colorsRow = tile.querySelector('.tile-style-colors');
+    const textColorInput = tile.querySelector('.style-text-color');
+    const bgColorInput = tile.querySelector('.style-bg-color');
+
+    function refreshStyleButtons() {
+      const bold = item.textStyle === 'bold';
+      stylePlainBtn.classList.toggle('active', !bold);
+      styleBoldBtn.classList.toggle('active', bold);
+      colorsRow.classList.toggle('show', bold);
+    }
+    refreshStyleButtons();
+
+    const styleToggleBtn = tile.querySelector('.tile-style-toggle');
+    styleToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const nowOpen = panel.classList.toggle('open');
+      styleToggleBtn.classList.toggle('active', nowOpen);
+    });
+    stylePlainBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      item.textStyle = undefined;
+      refreshStyleButtons();
+      applyTextCardStyle(tile, item);
+      saveCurrentProject();
+    });
+    styleBoldBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      item.textStyle = 'bold';
+      if (!item.textColor) item.textColor = '#ffffff';
+      if (!item.bgColor) item.bgColor = '#3b82f6';
+      textColorInput.value = item.textColor;
+      bgColorInput.value = item.bgColor;
+      refreshStyleButtons();
+      applyTextCardStyle(tile, item);
+      saveCurrentProject();
+    });
+    textColorInput.addEventListener('click', e => e.stopPropagation());
+    textColorInput.addEventListener('input', () => { item.textColor = textColorInput.value; applyTextCardStyle(tile, item); });
+    textColorInput.addEventListener('change', () => saveCurrentProject());
+    bgColorInput.addEventListener('click', e => e.stopPropagation());
+    bgColorInput.addEventListener('input', () => { item.bgColor = bgColorInput.value; applyTextCardStyle(tile, item); });
+    bgColorInput.addEventListener('change', () => saveCurrentProject());
+  } else {
+    tile.innerHTML = `
+      <div class="tile-media">
+        <img src="${item.src}" alt="" loading="lazy">
+        <div class="tile-mood" style="background:${moodGradientCss(item)}"></div>
+        <button class="tile-select" title="Select"></button>
+        <button class="tile-star" title="Star">&#9733;</button>
+        ${tileTagsHtml(item, badgeText)}
+        <button class="tile-del" title="Remove">&times;</button>
+      </div>
+      ${paletteStripHtml(item)}
+    `;
+
+    if (!item.moodGradient || !item.moodGradient.length) {
+      ensureMoodGradient(item).then(stops => {
+        if (!stops) return;
+        const moodDiv = tile.querySelector('.tile-mood');
+        if (moodDiv) moodDiv.style.background = moodGradientCss(item);
+      });
+    }
+
+    tile.querySelector('img').addEventListener('click', (e) => {
+      if (e.shiftKey || e.metaKey || e.ctrlKey) { toggleSelect(item.id); return; }
+      openLightbox(cat.id, idx);
     });
   }
 
-  tile.querySelector('img').addEventListener('click', (e) => {
-    if (e.shiftKey || e.metaKey || e.ctrlKey) { toggleSelect(item.id); return; }
-    openLightbox(cat.id, idx);
-  });
   tile.querySelector('.tile-select').addEventListener('click', (e) => {
     e.stopPropagation();
     toggleSelect(item.id);
@@ -2261,6 +2495,32 @@ function addColorToCategory(cat, hex, name) {
   saveCurrentProject();
   render();
   toast(`Added ${name ? name + ' (' + hex + ')' : hex}`);
+}
+
+/* ---------------- Text card (keywords / short sentence, no image) ---------------- */
+function addTextToCategory(cat, text) {
+  cat.items.push({ id: uid(), type: 'text', text, tags: [], notes: '', addedAt: Date.now() });
+  saveCurrentProject();
+  render();
+}
+
+// Applies the plain/bold visual style (and, for bold, the user's chosen
+// text/background colors) to a text card's textarea and its tile shell.
+function applyTextCardStyle(tile, item) {
+  const body = tile.querySelector('.tile-text-body');
+  const bold = item.textStyle === 'bold';
+  body.classList.toggle('text-bold', bold);
+  if (bold) {
+    const tc = item.textColor || '#ffffff';
+    const bg = item.bgColor || '#3b82f6';
+    body.style.setProperty('--card-text-color', tc);
+    body.style.setProperty('--card-bg-color', bg);
+    tile.style.background = bg;
+  } else {
+    body.style.removeProperty('--card-text-color');
+    body.style.removeProperty('--card-bg-color');
+    tile.style.background = '';
+  }
 }
 
 /* ---------------- File input (click-to-add) ---------------- */
@@ -2781,6 +3041,7 @@ function getProjectPreviewSrcs(p, n) {
   const srcs = [];
   for (const cat of p.categories) {
     for (const item of cat.items) {
+      if (!item.src) continue;
       srcs.push(item.src);
       if (srcs.length >= n) return srcs;
     }
@@ -2909,6 +3170,11 @@ jsonFileInput.addEventListener('change', async () => {
         items: (Array.isArray(cat.items) ? cat.items : []).map(item => ({
           id: uid(),
           src: item.src,
+          type: item.type,
+          text: item.text || '',
+          textStyle: item.textStyle,
+          textColor: item.textColor,
+          bgColor: item.bgColor,
           tags: Array.isArray(item.tags) ? item.tags.slice() : [],
           notes: item.notes || '',
           palette: Array.isArray(item.palette) ? item.palette.slice() : undefined,
