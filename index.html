@@ -265,6 +265,22 @@ header {
 .project-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .project-thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 14px; }
 .project-row-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-row-del {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity .12s, background .12s, color .12s;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.project-row:hover .project-row-del { opacity: 1; }
+.project-row-del:hover { background: var(--danger); color: #fff; }
 
 /* ---------- Main ---------- */
 main {
@@ -530,12 +546,17 @@ body.mood-mode .tile-mood { display: block; }
 }
 .tile-text-handle:active { cursor: grabbing; }
 .tile-text-body {
-  flex: 1;
+  /* flex-basis:auto (not the flex:1 shorthand's 0%) lets its own height —
+     kept in sync with its content by autosizeTextCard() — set the starting
+     size: short text still grows to fill a tall grid row like before, but
+     text too long for that row grows the row instead of scrolling. */
+  flex: 1 1 auto;
   min-height: 90px;
   display: block;
   width: 100%;
   border: none;
   resize: none;
+  overflow: hidden;
   background: transparent;
   color: var(--text);
   font-family: inherit;
@@ -553,7 +574,7 @@ body.mood-mode .tile-mood { display: block; }
    below — both live inside the same tile, so a shared class name would make
    tile.querySelector('.style-bold') ambiguous between the two elements. */
 .tile-text-body.text-bold {
-  font-size: 22px;
+  /* font-size is set inline per-card by boldFontSizeFor(), scaled to word count */
   font-weight: 700;
   line-height: 1.25;
   text-align: center;
@@ -1458,10 +1479,10 @@ function nowStamp() {
 
 const BACKUP_LAST_KEY = 'moodboard.backup.lastAt';
 const BACKUP_SNOOZE_KEY = 'moodboard.backup.snoozeUntil';
-const HISTORY_LIMIT = 10;
+const HISTORY_LIMIT = 5;
 const HISTORY_MIN_GAP_MS = 5 * 60 * 1000;
 const AUTO_BACKUP_MIN_GAP_MS = 60 * 1000;
-const AUTO_BACKUP_FILE_LIMIT = 20;
+const AUTO_BACKUP_FILE_LIMIT = 10;
 const REMINDER_DUE_MS = 7 * 24 * 60 * 60 * 1000;
 const REMINDER_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -2181,10 +2202,14 @@ function makeTile(cat, item, idx, badgeText, natural) {
       </div>
     `;
     const body = tile.querySelector('.tile-text-body');
-    body.addEventListener('input', () => { item.text = body.value; });
+    body.addEventListener('input', () => { item.text = body.value; applyTextCardStyle(tile, item, natural); });
     body.addEventListener('blur', () => { saveCurrentProject(); });
 
-    applyTextCardStyle(tile, item);
+    applyTextCardStyle(tile, item, natural);
+    // scrollHeight is only measurable once the tile is laid out in the
+    // document, which happens after this function returns (the caller
+    // appends it) — so re-measure the height once more next frame.
+    requestAnimationFrame(() => autosizeTextCard(body));
 
     const panel = tile.querySelector('.tile-style-panel');
     const stylePlainBtn = tile.querySelector('.style-plain');
@@ -2211,7 +2236,7 @@ function makeTile(cat, item, idx, badgeText, natural) {
       e.stopPropagation();
       item.textStyle = undefined;
       refreshStyleButtons();
-      applyTextCardStyle(tile, item);
+      applyTextCardStyle(tile, item, natural);
       saveCurrentProject();
     });
     styleBoldBtn.addEventListener('click', (e) => {
@@ -2222,14 +2247,14 @@ function makeTile(cat, item, idx, badgeText, natural) {
       textColorInput.value = item.textColor;
       bgColorInput.value = item.bgColor;
       refreshStyleButtons();
-      applyTextCardStyle(tile, item);
+      applyTextCardStyle(tile, item, natural);
       saveCurrentProject();
     });
     textColorInput.addEventListener('click', e => e.stopPropagation());
-    textColorInput.addEventListener('input', () => { item.textColor = textColorInput.value; applyTextCardStyle(tile, item); });
+    textColorInput.addEventListener('input', () => { item.textColor = textColorInput.value; applyTextCardStyle(tile, item, natural); });
     textColorInput.addEventListener('change', () => saveCurrentProject());
     bgColorInput.addEventListener('click', e => e.stopPropagation());
-    bgColorInput.addEventListener('input', () => { item.bgColor = bgColorInput.value; applyTextCardStyle(tile, item); });
+    bgColorInput.addEventListener('input', () => { item.bgColor = bgColorInput.value; applyTextCardStyle(tile, item, natural); });
     bgColorInput.addEventListener('change', () => saveCurrentProject());
   } else {
     tile.innerHTML = `
@@ -2505,8 +2530,10 @@ function addTextToCategory(cat, text) {
 }
 
 // Applies the plain/bold visual style (and, for bold, the user's chosen
-// text/background colors) to a text card's textarea and its tile shell.
-function applyTextCardStyle(tile, item) {
+// text/background colors and a font size that scales down as the text gets
+// longer, so a couple of keywords read as big letters but a full sentence
+// still fits) to a text card's textarea and its tile shell.
+function applyTextCardStyle(tile, item, natural) {
   const body = tile.querySelector('.tile-text-body');
   const bold = item.textStyle === 'bold';
   body.classList.toggle('text-bold', bold);
@@ -2515,12 +2542,36 @@ function applyTextCardStyle(tile, item) {
     const bg = item.bgColor || '#3b82f6';
     body.style.setProperty('--card-text-color', tc);
     body.style.setProperty('--card-bg-color', bg);
+    body.style.fontSize = boldFontSizeFor(item.text, natural) + 'px';
     tile.style.background = bg;
   } else {
     body.style.removeProperty('--card-text-color');
     body.style.removeProperty('--card-bg-color');
+    body.style.fontSize = '';
     tile.style.background = '';
   }
+  autosizeTextCard(body);
+}
+
+// The wall/masonry view has no fixed grid row to distort, so bold cards can
+// go noticeably bigger there than in the regular square-tile grid.
+function boldFontSizeFor(text, natural) {
+  const len = (text || '').trim().length;
+  const steps = natural
+    ? [[10, 46], [20, 38], [40, 30], [80, 24], [140, 19]]
+    : [[10, 28], [20, 24], [40, 20], [80, 16], [140, 14]];
+  for (const [maxLen, size] of steps) {
+    if (len <= maxLen) return size;
+  }
+  return natural ? 16 : 12;
+}
+
+// Textareas don't grow with their content on their own — without this a
+// card with more than a couple of lines would get an internal scrollbar
+// instead of the card (and its grid row) simply getting taller.
+function autosizeTextCard(body) {
+  body.style.height = 'auto';
+  body.style.height = body.scrollHeight + 'px';
 }
 
 /* ---------------- File input (click-to-add) ---------------- */
@@ -3065,6 +3116,15 @@ function renderProjectSwitcher() {
     name.textContent = proj.name;
     row.appendChild(thumb);
     row.appendChild(name);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'project-row-del';
+    delBtn.title = 'Delete project';
+    delBtn.innerHTML = '&times;';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteProject(proj);
+    });
+    row.appendChild(delBtn);
     row.addEventListener('click', () => {
       currentProjectId = proj.id;
       resetViewState();
@@ -3074,6 +3134,20 @@ function renderProjectSwitcher() {
     });
     projectMenu.appendChild(row);
   });
+}
+
+async function deleteProject(p) {
+  if (projects.length <= 1) { toast('At least one project must remain'); return; }
+  if (!confirm(`Permanently delete project "${p.name}"?`)) return;
+  await idbDelete(p.id);
+  projects = projects.filter(x => x.id !== p.id);
+  if (currentProjectId === p.id) {
+    currentProjectId = projects[0].id;
+    resetViewState();
+    localStorage.setItem('moodboard.currentProjectId', currentProjectId);
+  }
+  render();
+  triggerBackupHooks();
 }
 projectSwitcherBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3112,17 +3186,9 @@ document.getElementById('newProjectBtn').addEventListener('click', async () => {
   triggerBackupHooks();
 });
 
-document.getElementById('deleteProjectBtn').addEventListener('click', async () => {
-  if (projects.length <= 1) { toast('At least one project must remain'); return; }
+document.getElementById('deleteProjectBtn').addEventListener('click', () => {
   const p = currentProject();
-  if (!confirm(`Permanently delete project "${p.name}"?`)) return;
-  await idbDelete(p.id);
-  projects = projects.filter(x => x.id !== p.id);
-  currentProjectId = projects[0].id;
-  resetViewState();
-  localStorage.setItem('moodboard.currentProjectId', currentProjectId);
-  render();
-  triggerBackupHooks();
+  if (p) deleteProject(p);
 });
 
 /* ---------------- JSON backup (export / import per project) ---------------- */
