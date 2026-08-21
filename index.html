@@ -89,6 +89,33 @@ body.theme-graphite {
   --text-dim: #666666;
 }
 
+/* Scrollbars — themed to match the app instead of the browser default, on
+   every scrollable element (page, sidebars, modals) via the universal
+   selector, and automatically following whichever theme is active since
+   they're built from the same --border-hover/--text-muted tokens. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border-hover);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner { background: transparent; }
+
 html, body { height: 100%; }
 body {
   background: var(--bg);
